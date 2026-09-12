@@ -154,7 +154,7 @@ const WEEKS = [
 
 const RESOURCES_BY_DAY = {
   1: [
-    { title: "Python for AI & Agents", platform: "Dave Ebbelaar", type: "Playlist",
+    { title: "Building AI Agents", platform: "Dave Ebbelaar", type: "Playlist",
       url: "https://www.youtube.com/playlist?list=PL-Y17yukoyy0SupAJSPQYg_Lvre9Kt9EG", label: "Primary" },
   ],
   3: [
@@ -173,7 +173,7 @@ const RESOURCES_BY_DAY = {
     { title: "Machine Learning Playlist", platform: "StatQuest", type: "Playlist",
       url: "https://www.youtube.com/playlist?list=PLblh5JKOoLUICTaGLRoHQDuF_7q2GfuJF", label: "Primary" },
     { title: "Neural Networks Playlist", platform: "3Blue1Brown", type: "Playlist",
-      url: "https://www.youtube.com/playlist?list=PLZHQObOWTQDMsr9K-rj53DwVRMYO3t5Yr", label: "Selective" },
+      url: "https://www.youtube.com/playlist?list=PLZHQObOWTQDNU6R1_67000Dx_ZCJB-3pi", label: "Selective" },
   ],
   7: [
     { title: "NeetCode Roadmap", platform: "NeetCode", type: "Documentation",
@@ -211,7 +211,7 @@ const RESOURCES_BY_DAY = {
   ],
   15: [
     { title: "RAG From Scratch", platform: "LangChain", type: "Playlist",
-      url: "https://www.youtube.com/playlist?list=PLfaIDFEXuae0gBSJ9T0w7cu7iJZbH3T31", label: "Primary" },
+      url: "https://www.youtube.com/playlist?list=PLfaIDFEXuae2LXbO1_PKyVJiQ23ZztA0x", label: "Primary" },
     { title: "Agentic RAG From Scratch", platform: "Dave Ebbelaar", type: "Video",
       url: "https://www.youtube.com/watch?v=RxwjoegpI98", label: "Selective" },
   ],
@@ -281,7 +281,7 @@ const RESOURCES_BY_DAY = {
   ],
   35: [
     { title: "Graph Theory Playlist", platform: "William Fiset", type: "Playlist",
-      url: "https://www.youtube.com/playlist?list=PLDV1Zeh2NRsBI1C-mR6ZhHTyfoEJWlxvq", label: "Primary" },
+      url: "https://www.youtube.com/playlist?list=PLDV1Zeh2NRsDGO4--qE8yH72HFL1Km93P", label: "Primary" },
     { title: "Algorithms Playlist", platform: "Abdul Bari", type: "Playlist",
       url: "https://www.youtube.com/playlist?list=PLDN4rrl48XKpZkf03iYFl-O29szjTrs_O", label: "Selective" },
     { title: "NeetCode Roadmap", platform: "NeetCode", type: "Documentation",
