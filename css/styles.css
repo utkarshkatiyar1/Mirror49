@@ -548,6 +548,75 @@ button {
 
 .resource-watched.done .check-box svg { opacity: 1; }
 
+.resource-card { align-items: flex-start; border-left: 3px solid var(--border); }
+.resource-card-required { border-left-color: var(--cyan); }
+.resource-card-optional { border-left-color: var(--indigo); }
+.resource-card-reference { border-left-color: var(--border-strong); opacity: 0.85; }
+
+.resource-title-plain { cursor: default; }
+.resource-title-plain:hover { color: var(--text-primary); }
+
+.resource-priority {
+  padding: 2px 7px;
+  border-radius: 999px;
+  font-weight: 700;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.resource-priority-required { background: var(--cyan-dim); color: var(--cyan); }
+.resource-priority-optional { background: var(--indigo-dim); color: var(--indigo); }
+.resource-priority-reference { background: var(--bg-card); color: var(--text-muted); border: 1px solid var(--border); }
+
+.resource-duration { background: var(--bg-card); color: var(--text-secondary); }
+.resource-timerange { background: var(--success-dim); color: var(--success); }
+.resource-paid { background: var(--danger-dim); color: var(--danger); }
+
+.resource-instruction {
+  margin-top: 8px;
+  font-size: 12.5px;
+  line-height: 1.55;
+  color: var(--text-secondary);
+}
+
+.resource-why {
+  margin-top: 6px;
+  font-size: 11.5px;
+  line-height: 1.5;
+  color: var(--text-faint);
+  font-style: italic;
+}
+.resource-why span { font-style: normal; color: var(--text-muted); font-weight: 600; }
+
+.resource-details { margin-top: 8px; }
+.resource-details summary {
+  cursor: pointer;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--cyan);
+  user-select: none;
+}
+.resource-content {
+  margin-top: 8px;
+  padding: 10px 12px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-sm);
+  font-size: 12px;
+  line-height: 1.65;
+  color: var(--text-secondary);
+  white-space: pre-wrap;
+}
+
+.resource-empty {
+  padding: 14px;
+  font-size: 12.5px;
+  color: var(--text-muted);
+  background: var(--bg-inset);
+  border: 1px dashed var(--border);
+  border-radius: var(--radius-md);
+}
+
 /* ---------- Today view ---------- */
 
 .today-grid {

@@ -24,7 +24,7 @@
     });
     const resources = {};
     DAYS.forEach((d) => {
-      if (d.resources) d.resources.forEach((r) => { resources[r.url] = false; });
+      if (d.resources) d.resources.forEach((r, i) => { resources[resourceKey(d.day, i)] = false; });
     });
     return {
       days,
@@ -187,6 +187,102 @@
     return slug ? `https://leetcode.com/problems/${slug}/` : null;
   }
 
+  // ---------------------------------------------------------------------
+  // Learning-resource cards
+  // ---------------------------------------------------------------------
+
+  function resourceKey(dayNum, index) {
+    return `${dayNum}:${index}`;
+  }
+
+  const ACTION_BY_FORMAT = {
+    "Video": "Watch",
+    "Article": "Read",
+    "Documentation": "Read",
+    "Course lesson": "Watch",
+    "Internal exercise": "Attempt",
+  };
+
+  const ACTION_PAST_TENSE = {
+    "Watch": "Watched",
+    "Read": "Read",
+    "Complete": "Completed",
+    "Attempt": "Attempted",
+  };
+
+  function resourceAction(r) {
+    return r.action || ACTION_BY_FORMAT[r.format] || "Complete";
+  }
+
+  function parseTimeToSeconds(t) {
+    if (!t) return null;
+    const parts = String(t).split(":").map((p) => parseInt(p, 10));
+    if (parts.some((p) => Number.isNaN(p))) return null;
+    let seconds = 0;
+    for (const p of parts) seconds = seconds * 60 + p;
+    return seconds;
+  }
+
+  function timestampedUrl(r) {
+    if (!r.url) return null;
+    if (!r.startTime) return r.url;
+    const seconds = parseTimeToSeconds(r.startTime);
+    if (seconds === null) return r.url;
+    const sep = r.url.includes("?") ? "&" : "?";
+    return `${r.url}${sep}t=${seconds}s`;
+  }
+
+  function priorityClass(priority) {
+    if (priority === "REQUIRED") return "required";
+    if (priority === "OPTIONAL") return "optional";
+    return "reference";
+  }
+
+  function renderResourceCard(dayNum, r, index) {
+    const key = resourceKey(dayNum, index);
+    const done = !!state.resources[key];
+    const action = resourceAction(r);
+    const pastTense = ACTION_PAST_TENSE[action] || "Done";
+    const url = timestampedUrl(r);
+    const priorityCls = priorityClass(r.priority);
+
+    const titleHtml = url
+      ? `<a class="resource-title" href="${esc(url)}" target="_blank" rel="noopener noreferrer">${esc(r.title)}${externalIcon()}</a>`
+      : `<span class="resource-title resource-title-plain">${esc(r.title)}</span>`;
+
+    const timeRangeHtml = (r.startTime && r.endTime)
+      ? `<span class="resource-tag resource-timerange">${esc(action)} ${esc(r.startTime)}–${esc(r.endTime)}</span>`
+      : (r.startTime ? `<span class="resource-tag resource-timerange">${esc(action)} from ${esc(r.startTime)}</span>` : "");
+
+    const paidHtml = r.paid ? `<span class="resource-tag resource-paid">Paid</span>` : "";
+
+    const contentHtml = r.content
+      ? `<details class="resource-details"><summary>Open full material</summary><div class="resource-content">${esc(r.content)}</div></details>`
+      : "";
+
+    return `
+      <div class="resource-card resource-card-${priorityCls}">
+        <div class="resource-main">
+          ${titleHtml}
+          <div class="resource-meta">
+            <span class="resource-priority resource-priority-${priorityCls}">${esc(r.priority)}</span>
+            <span class="resource-platform">${esc(r.creator)}</span>
+            <span class="resource-type">${esc(r.format)}</span>
+            <span class="resource-tag resource-duration">${esc(r.duration)}</span>
+            ${timeRangeHtml}
+            ${paidHtml}
+          </div>
+          <div class="resource-instruction">${esc(r.instruction)}</div>
+          ${r.why ? `<div class="resource-why"><span>Why this resource:</span> ${esc(r.why)}</div>` : ""}
+          ${contentHtml}
+        </div>
+        <div class="resource-watched ${done ? "done" : ""}" data-nav="toggle-resource" data-key="${esc(key)}" role="checkbox" aria-checked="${done}" tabindex="0">
+          <span class="check-box">${checkIcon()}</span>
+          <span>${done ? pastTense : action}</span>
+        </div>
+      </div>`;
+  }
+
   function renderDsaItem({ title, checked, dataAttrs }) {
     const attrs = Object.entries(dataAttrs).map(([k, v]) => `data-${k}="${v}"`).join(" ");
     const url = leetcodeUrl(title);
@@ -200,33 +296,24 @@
       </div>`;
   }
 
-  function renderResourcesCard(resources) {
-    if (!resources || !resources.length) return "";
-    const items = resources.map((r) => {
-      const watched = !!state.resources[r.url];
-      const labelHtml = r.label ? `<span class="resource-tag">${esc(r.label)}</span>` : "";
+  function renderResourcesCard(dayNum, resources) {
+    if (!resources || !resources.length) {
       return `
-        <div class="resource-card">
-          <div class="resource-main">
-            <a class="resource-title" href="${esc(r.url)}" target="_blank" rel="noopener noreferrer">
-              ${esc(r.title)}${externalIcon()}
-            </a>
-            <div class="resource-meta">
-              <span class="resource-platform">${esc(r.platform)}</span>
-              <span class="resource-type">${esc(r.type)}</span>
-              ${labelHtml}
-            </div>
-          </div>
-          <div class="resource-watched ${watched ? "done" : ""}" data-nav="toggle-resource" data-url="${esc(r.url)}" role="checkbox" aria-checked="${watched}" tabindex="0">
-            <span class="check-box">${checkIcon()}</span>
-            <span>Watched</span>
-          </div>
+        <div class="card">
+          <div class="card-title" style="margin-bottom:10px;">Learning Resources</div>
+          <div class="resource-empty">No external resources today — review notes and prior material.</div>
         </div>`;
-    }).join("");
+    }
+    const required = resources.filter((r) => r.priority === "REQUIRED");
+    const requiredMinutes = required.reduce((acc, r) => acc + (parseInt(r.duration, 10) || 0), 0);
+    const items = resources.map((r, i) => renderResourceCard(dayNum, r, i)).join("");
 
     return `
       <div class="card">
-        <div class="card-title" style="margin-bottom:10px;">Learning Resources</div>
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+          <div class="card-title">Learning Resources</div>
+          ${required.length ? `<span class="pill">${requiredMinutes || "~"} min required</span>` : ""}
+        </div>
         <div class="resource-list">${items}</div>
       </div>`;
   }
@@ -344,7 +431,7 @@
             <div class="checklist">${dsaHtml}</div>
           </div>
 
-          ${renderResourcesCard(def.resources)}
+          ${renderResourcesCard(def.day, def.resources)}
         </div>
 
         <div class="side-stack">
@@ -536,7 +623,7 @@
             </div>
             <div class="checklist">${dsaHtml}</div>
           </div>
-          ${renderResourcesCard(def.resources)}
+          ${renderResourcesCard(def.day, def.resources)}
         </div>
         <div class="side-stack">
           <div class="card">
@@ -875,8 +962,8 @@
       } else if (nav === "reset") {
         resetAllProgress();
       } else if (nav === "toggle-resource") {
-        const url = navEl.dataset.url;
-        state.resources[url] = !state.resources[url];
+        const key = navEl.dataset.key;
+        state.resources[key] = !state.resources[key];
         saveState();
         render();
       }
