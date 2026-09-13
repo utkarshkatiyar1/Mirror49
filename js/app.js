@@ -25,6 +25,23 @@
     const resources = {};
     DAYS.forEach((d) => {
       if (d.resources) d.resources.forEach((r, i) => { resources[resourceKey(d.day, i)] = false; });
+      const primerDay = DSA_PRIMERS_BY_DAY[d.day];
+      if (primerDay) {
+        primerDay.patterns.forEach((p) => {
+          (p.resources || []).forEach((r, ri) => { resources[dsaPrimerVideoKey(d.day, p.id, ri)] = false; });
+        });
+      }
+    });
+    const dsaPrimer = {};
+    DAYS.forEach((d) => {
+      const primerDay = DSA_PRIMERS_BY_DAY[d.day];
+      if (!primerDay) return;
+      primerDay.patterns.forEach((p) => {
+        dsaPrimer[dsaPrimerKey(d.day, p.id, "read")] = false;
+        if (p.template) dsaPrimer[dsaPrimerKey(d.day, p.id, "template")] = false;
+      });
+      dsaPrimer[dsaPrimerKey(d.day, "day", "attempted")] = false;
+      dsaPrimer[dsaPrimerKey(d.day, "day", "reviewed")] = false;
     });
     return {
       days,
@@ -34,6 +51,7 @@
       contentBlacklist: CONTENT_PATH.blacklist.map(() => false),
       finalReadiness: FINAL_READINESS.items.map(() => false),
       resources,
+      dsaPrimer,
     };
   }
 
@@ -195,6 +213,21 @@
     return `${dayNum}:${index}`;
   }
 
+  // DSA Pattern Primer completion keys — separate state bucket/namespace from the
+  // AI-resource `resources` keys above, per the stable-ID scheme: dsa-primer:day:patternId:itemId.
+  function dsaPrimerKey(dayNum, patternId, itemId) {
+    return `dsa-primer:${dayNum}:${patternId}:${itemId}`;
+  }
+  function dsaPrimerVideoKey(dayNum, patternId, resIndex) {
+    return dsaPrimerKey(dayNum, patternId, `video${resIndex}`);
+  }
+
+  function sumRequiredMinutes(arr) {
+    return (arr || [])
+      .filter((r) => r.priority === "REQUIRED")
+      .reduce((acc, r) => acc + (parseInt(r.duration, 10) || 0), 0);
+  }
+
   const ACTION_BY_FORMAT = {
     "Video": "Watch",
     "Article": "Read",
@@ -239,7 +272,10 @@
   }
 
   function renderResourceCard(dayNum, r, index) {
-    const key = resourceKey(dayNum, index);
+    return renderResourceCardByKey(resourceKey(dayNum, index), r);
+  }
+
+  function renderResourceCardByKey(key, r) {
     const done = !!state.resources[key];
     const action = resourceAction(r);
     const pastTense = ACTION_PAST_TENSE[action] || "Done";
@@ -256,8 +292,20 @@
 
     const paidHtml = r.paid ? `<span class="resource-tag resource-paid">Paid</span>` : "";
 
+    // Hidden-mock content (unseen problems in Days 46/47/49) splits on a fixed delimiter:
+    // the problem statement stays visible immediately, the pattern tag/solution/analysis
+    // after it stays hidden until the learner explicitly presses "Reveal analysis".
+    const REVEAL_DELIMITER = "--- REVEAL ANALYSIS BELOW ---";
     const contentHtml = r.content
-      ? `<details class="resource-details"><summary>Open full material</summary><div class="resource-content">${esc(r.content)}</div></details>`
+      ? (r.content.includes(REVEAL_DELIMITER)
+          ? (() => {
+              const [before, ...rest] = r.content.split(REVEAL_DELIMITER);
+              const after = rest.join(REVEAL_DELIMITER);
+              return `
+                <div class="resource-content resource-content-problem">${esc(before.trim())}</div>
+                <details class="resource-details reveal-analysis"><summary>Reveal analysis</summary><div class="resource-content">${esc(after.trim())}</div></details>`;
+            })()
+          : `<details class="resource-details"><summary>Open full material</summary><div class="resource-content">${esc(r.content)}</div></details>`)
       : "";
 
     return `
@@ -305,7 +353,7 @@
         </div>`;
     }
     const required = resources.filter((r) => r.priority === "REQUIRED");
-    const requiredMinutes = required.reduce((acc, r) => acc + (parseInt(r.duration, 10) || 0), 0);
+    const requiredMinutes = sumRequiredMinutes(resources);
     const items = resources.map((r, i) => renderResourceCard(dayNum, r, i)).join("");
 
     return `
@@ -315,6 +363,97 @@
           ${required.length ? `<span class="pill">${requiredMinutes || "~"} min required</span>` : ""}
         </div>
         <div class="resource-list">${items}</div>
+      </div>`;
+  }
+
+  // ---------------------------------------------------------------------
+  // DSA Pattern Primer
+  // ---------------------------------------------------------------------
+
+  function renderDsaPrimerCheck(key, label) {
+    const done = !!state.dsaPrimer[key];
+    return `
+      <div class="check-item dsa-primer-check ${done ? "done" : ""}" data-nav="toggle-dsa-primer" data-key="${esc(key)}" role="checkbox" aria-checked="${done}" tabindex="0">
+        <span class="check-box">${checkIcon()}</span>
+        <span class="check-label">${esc(label)}</span>
+      </div>`;
+  }
+
+  function renderDsaPatternBlock(dayNum, pattern) {
+    const readKey = dsaPrimerKey(dayNum, pattern.id, "read");
+    const recognitionHtml = (pattern.recognition || []).map((r) => `<li>${esc(r)}</li>`).join("");
+    const mistakesHtml = (pattern.commonMistakes || []).map((m) => `<li>${esc(m)}</li>`).join("");
+
+    const complexityHtml = pattern.complexity
+      ? `<div class="dsa-complexity">
+          <span class="dsa-complexity-badge">Time ${esc(pattern.complexity.time)}</span>
+          <span class="dsa-complexity-badge">Space ${esc(pattern.complexity.space)}</span>
+        </div>`
+      : "";
+
+    const templateHtml = pattern.template
+      ? `<details class="resource-details dsa-template">
+          <summary>Open reusable template</summary>
+          <pre class="dsa-template-code">${esc(pattern.template)}</pre>
+        </details>
+        ${renderDsaPrimerCheck(dsaPrimerKey(dayNum, pattern.id, "template"), "Template practised")}`
+      : "";
+
+    const walkthroughHtml = pattern.walkthrough
+      ? `<details class="resource-details">
+          <summary>Open tiny walkthrough</summary>
+          <div class="resource-content">${esc(pattern.walkthrough)}</div>
+        </details>`
+      : "";
+
+    const resourcesHtml = (pattern.resources || [])
+      .map((r, ri) => renderResourceCardByKey(dsaPrimerVideoKey(dayNum, pattern.id, ri), r))
+      .join("");
+
+    return `
+      <div class="dsa-pattern-block">
+        <div class="dsa-pattern-header">
+          <h3 class="dsa-pattern-name">${esc(pattern.name)}</h3>
+          ${renderDsaPrimerCheck(readKey, "Primer read")}
+        </div>
+        ${recognitionHtml ? `<div class="dsa-subhead">Use this when…</div><ul class="dsa-list">${recognitionHtml}</ul>` : ""}
+        ${pattern.intuition ? `<div class="dsa-subhead">Core intuition</div><p class="dsa-intuition">${esc(pattern.intuition)}</p>` : ""}
+        ${templateHtml}
+        ${complexityHtml}
+        ${mistakesHtml ? `<div class="dsa-subhead">Common mistakes</div><ul class="dsa-list dsa-mistakes">${mistakesHtml}</ul>` : ""}
+        ${walkthroughHtml}
+        ${resourcesHtml ? `<div class="dsa-subhead">Required helper</div><div class="resource-list">${resourcesHtml}</div>` : ""}
+      </div>`;
+  }
+
+  function renderDsaPrimerCard(dayNum, aiResources) {
+    const primerDay = DSA_PRIMERS_BY_DAY[dayNum];
+    if (!primerDay || !primerDay.patterns || !primerDay.patterns.length) return "";
+
+    const patternsHtml = primerDay.patterns.map((p) => renderDsaPatternBlock(dayNum, p)).join("");
+    const primerRequiredMin = primerDay.patterns.reduce(
+      (acc, p) => acc + sumRequiredMinutes(p.resources), 0
+    );
+    const aiRequiredMin = sumRequiredMinutes(aiResources);
+    const attemptedKey = dsaPrimerKey(dayNum, "day", "attempted");
+    const reviewedKey = dsaPrimerKey(dayNum, "day", "reviewed");
+
+    return `
+      <div class="card dsa-primer-card">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+          <div class="card-title">DSA Pattern Primer</div>
+          <span class="pill">${primerRequiredMin || "~"} min required</span>
+        </div>
+        <div class="dsa-duration-strip">
+          <span>AI learning: <b>${aiRequiredMin || "~"} min</b> required</span>
+          <span>DSA primer: <b>${primerRequiredMin || "~"} min</b> required</span>
+          <span>Problem solving: <b>approximately 60–90 min</b></span>
+        </div>
+        ${patternsHtml}
+        <div class="dsa-primer-footer">
+          ${renderDsaPrimerCheck(attemptedKey, "Problems attempted")}
+          ${renderDsaPrimerCheck(reviewedKey, "Review completed")}
+        </div>
       </div>`;
   }
 
@@ -422,6 +561,8 @@
               <div class="field-value ship-value">${esc(def.ship)}</div>
             </div>
           </div>
+
+          ${renderDsaPrimerCard(def.day, def.resources)}
 
           <div class="card">
             <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
@@ -616,6 +757,7 @@
               <div class="field-value ship-value">${esc(def.ship)}</div>
             </div>
           </div>
+          ${renderDsaPrimerCard(def.day, def.resources)}
           <div class="card">
             <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
               <div class="card-title">DSA problems</div>
@@ -923,7 +1065,7 @@
     if (e.target.closest("a.dsa-link")) return;
 
     const checkEl = e.target.closest(".check-item");
-    if (checkEl) {
+    if (checkEl && checkEl.dataset.scope) {
       const scope = checkEl.dataset.scope;
       const index = parseInt(checkEl.dataset.index, 10);
       const key = checkEl.dataset.day || checkEl.dataset.week || null;
@@ -964,6 +1106,11 @@
       } else if (nav === "toggle-resource") {
         const key = navEl.dataset.key;
         state.resources[key] = !state.resources[key];
+        saveState();
+        render();
+      } else if (nav === "toggle-dsa-primer") {
+        const key = navEl.dataset.key;
+        state.dsaPrimer[key] = !state.dsaPrimer[key];
         saveState();
         render();
       }

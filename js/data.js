@@ -163,7 +163,7 @@ const RESOURCES_BY_DAY = {
       format: "Documentation",
       priority: "REQUIRED",
       url: "https://docs.python.org/3/tutorial/controlflow.html#defining-functions",
-      instruction: "Read §4.8 Defining Functions and §4.9 More on Defining Functions. Pay attention to the mutable-default-argument warning in 4.8.1 — this is the single most common Python production bug.",
+      instruction: "Read §4.8 Defining Functions and §4.9 More on Defining Functions. Pay attention to the mutable-default-argument warning in §4.9.1 — Default Argument Values — this is the single most common Python production bug.",
       duration: "15 min read",
       verifiedTitle: "4. More Control Flow Tools — Python 3.14.7 documentation",
       verifiedAt: "2026-09-13",
@@ -175,7 +175,7 @@ const RESOURCES_BY_DAY = {
       format: "Documentation",
       priority: "REQUIRED",
       url: "https://docs.python.org/3/tutorial/datastructures.html#list-comprehensions",
-      instruction: "Read §5.1.3 List Comprehensions, then jump to §5.5 Dictionaries (same page). Note that dicts and lists are mutable and passed by reference.",
+      instruction: "Read §5.1.3 List Comprehensions, then jump to §5.5 Dictionaries (same page). Lists and dictionaries are mutable objects. Python uses object references and call-by-sharing: mutations through a shared reference remain visible to the caller, while rebinding the local variable does not change the caller's variable.",
       duration: "15 min read",
       verifiedTitle: "5. Data Structures — Python 3.14.7 documentation",
       verifiedAt: "2026-09-13",
@@ -2918,10 +2918,2629 @@ const DAYS = [
     ship: "Scorecard complete; begin targeted applications." },
 ];
 
+/* DSA Pattern Primer cards, keyed by day. Each { day, patterns: [...] } teaches the
+   reusable algorithmic pattern(s) behind that day's DSA problems before the problems
+   themselves — recognition signals, core intuition, a language-neutral template,
+   complexity, common mistakes, a tiny walkthrough and (normally) one verified helper
+   video. Mock/review days carry internal recognition/quiz material instead of a new
+   pattern. Rendered by js/app.js (renderDsaPrimerCard) between SHIP and DSA problems. */
+
+const DSA_PRIMERS_BY_DAY = {
+  1: {
+    "day": 1,
+    "patterns": [
+      {
+        "id": "arrays-hash-sets",
+        "name": "Arrays and Hash Sets",
+        "recognition": [
+          "You need constant-time membership checks (\"have I seen this before?\")",
+          "You need to detect duplicates across a collection",
+          "You need to find a complement value (target - x) instead of comparing every pair",
+          "A brute-force solution would compare every element to every other element (O(n²))"
+        ],
+        "intuition": "Trade space for time: store every value you've already processed in a hash set or hash map so each future lookup is O(1) average instead of re-scanning the array. The moment you catch yourself writing a nested loop to compare elements pairwise, ask whether a hash structure removes the inner loop entirely.",
+        "template": "# Duplicate detection\nseen = set()\nfor x in nums:\n    if x in seen:\n        return True\n    seen.add(x)\nreturn False\n\n# Frequency-map construction (e.g. anagram check)\nfreq = {}\nfor ch in s:\n    freq[ch] = freq.get(ch, 0) + 1\n# compare two freq maps, or check all counts are even/zero, etc.\n\n# Two Sum complement lookup\nindex_of = {}\nfor i, x in enumerate(nums):\n    complement = target - x\n    if complement in index_of:\n        return [index_of[complement], i]\n    index_of[x] = i",
+        "complexity": {
+          "time": "O(n)",
+          "space": "O(n)"
+        },
+        "commonMistakes": [
+          "Using a nested loop and producing O(n²) when a single pass with a hash set solves it in O(n)",
+          "Checking membership AFTER inserting the current element, which lets an element match itself",
+          "For anagram checks, using a plain set instead of a frequency map — sets erase count information (\"aab\" and \"ab\" look identical to a set)"
+        ],
+        "walkthrough": "Two Sum on nums=[2,7,11,15], target=9: i=0, x=2, complement=7, not in index_of yet -> store index_of[2]=0. i=1, x=7, complement=2, IS in index_of -> return [0,1]. One pass, no nested loop.",
+        "resources": [
+          {
+            "title": "Two Sum - Leetcode 1 - HashMap - Python",
+            "creator": "NeetCode",
+            "format": "Video",
+            "priority": "REQUIRED",
+            "url": "https://www.youtube.com/watch?v=KLlXCFG5TnA",
+            "instruction": "Watch the full video. Focus on why the hashmap/complement approach replaces the O(n²) brute force — this is the pattern, not just this one problem.",
+            "duration": "8 min",
+            "startTime": null,
+            "endTime": null,
+            "verifiedTitle": "Two Sum - Leetcode 1 - HashMap - Python",
+            "verifiedAt": "2026-09-13"
+          }
+        ]
+      }
+    ]
+  },
+  2: {
+    "day": 2,
+    "patterns": [
+      {
+        "id": "frequency-signatures-buckets",
+        "name": "Frequency Signatures and Bucket Grouping",
+        "recognition": [
+          "You need to group items that share the same underlying composition (e.g. anagrams)",
+          "You need the top-K or most-frequent elements",
+          "You need the single element that occurs more than n/2 times",
+          "The obvious solution needs a full O(n log n) sort but the value range is bounded"
+        ],
+        "intuition": "Reduce each item to a canonical signature so equal-composition items collide into the same bucket. For anagrams, either sort each string (letters become identical order) or build a 26-length count tuple (avoids the sort entirely). For top-K frequency problems, once you have counts, a full sort is overkill — bucket the elements by count (index = count, 1..n) and read buckets from the top down; that's O(n) instead of O(n log n).",
+        "template": "# Group Anagrams — signature 1: sorted-string key\ngroups = {}\nfor s in strs:\n    key = \"\".join(sorted(s))\n    groups.setdefault(key, []).append(s)\n\n# Group Anagrams — signature 2: 26-length frequency tuple (avoids O(k log k) sort per string)\ngroups = {}\nfor s in strs:\n    count = [0] * 26\n    for ch in s:\n        count[ord(ch) - ord('a')] += 1\n    groups.setdefault(tuple(count), []).append(s)\n\n# Top K Frequent — bucket sort, O(n)\nfreq = {}\nfor x in nums:\n    freq[x] = freq.get(x, 0) + 1\nbuckets = [[] for _ in range(len(nums) + 1)]\nfor x, c in freq.items():\n    buckets[c].append(x)\nresult = []\nfor c in range(len(buckets) - 1, 0, -1):\n    for x in buckets[c]:\n        result.append(x)\n        if len(result) == k:\n            break",
+        "complexity": {
+          "time": "O(n·k) for grouping (k = avg string length); O(n) for bucketed Top-K",
+          "space": "O(n·k) / O(n)"
+        },
+        "commonMistakes": [
+          "Sorting the final Top-K result with a general sort (O(n log n)) when bucket sort gives O(n) because counts are bounded by n",
+          "Using the sorted-string key when a 26-char count tuple would be faster and avoids per-string sorting",
+          "Confusing Majority Element's Boyer-Moore voting trick with a plain frequency map — Boyer-Moore is O(1) space, a frequency map is O(n) space; know both and when each is asked for"
+        ],
+        "walkthrough": "Group Anagrams on [\"eat\",\"tea\",\"tan\"]: sorted(\"eat\")=\"aet\", sorted(\"tea\")=\"aet\" -> same bucket; sorted(\"tan\")=\"ant\" -> different bucket. Result: [[\"eat\",\"tea\"],[\"tan\"]].",
+        "resources": [
+          {
+            "title": "Group Anagrams - Categorize Strings by Count - Leetcode 49",
+            "creator": "NeetCode",
+            "format": "Video",
+            "priority": "REQUIRED",
+            "url": "https://www.youtube.com/watch?v=vzdNOK2oB2E",
+            "instruction": "Watch the full video. It covers the count-tuple signature explicitly (the title's 'categorize by count') — compare it mentally against the sorted-string alternative described in the template above.",
+            "duration": "8 min",
+            "startTime": null,
+            "endTime": null,
+            "verifiedTitle": "Group Anagrams - Categorize Strings by Count - Leetcode 49",
+            "verifiedAt": "2026-09-13"
+          }
+        ]
+      }
+    ]
+  },
+  3: {
+    "day": 3,
+    "patterns": [
+      {
+        "id": "prefix-sums-products",
+        "name": "Prefix Sums and Prefix/Suffix Products",
+        "recognition": [
+          "You'll be asked the same kind of range query (sum, product) many times over a fixed array",
+          "You need a value derived from \"every other element\" without recomputing a full pass each time",
+          "A naive solution recomputes a running total inside a loop for every query — O(n) per query, O(n·q) total"
+        ],
+        "intuition": "Precompute once, query in O(1) forever after. A prefix array where prefix[i] = sum of everything up to index i turns any range sum into one subtraction. The same idea run in both directions — a left-to-right pass and a right-to-left pass — gives you \"everything except position i\" without ever looking at nums[i] itself, which is exactly Product of Array Except Self (and works even with zeros, unlike the tempting-but-wrong divide-out-nums[i] shortcut).",
+        "template": "# Prefix sum array\nprefix = [0] * (len(nums) + 1)\nfor i, x in enumerate(nums):\n    prefix[i + 1] = prefix[i] + x\n\n# sum(left, right) inclusive, O(1) after preprocessing\ndef range_sum(left, right):\n    return prefix[right + 1] - prefix[left]\n\n# Left-product / right-product without division\nn = len(nums)\nresult = [1] * n\nleft_running = 1\nfor i in range(n):\n    result[i] = left_running\n    left_running *= nums[i]\nright_running = 1\nfor i in range(n - 1, -1, -1):\n    result[i] *= right_running\n    right_running *= nums[i]",
+        "complexity": {
+          "time": "O(n) to build, O(1) per query",
+          "space": "O(n) (O(1) extra if the output array itself is reused as scratch space)"
+        },
+        "commonMistakes": [
+          "Reaching for division (total_product / nums[i]) — breaks immediately if any element is 0, and the problem usually bans division anyway",
+          "Off-by-one on the prefix array: prefix[0] must be 0 (empty-range sentinel), so range_sum uses prefix[right+1] - prefix[left], not prefix[right] - prefix[left]",
+          "Recomputing a fresh running total inside a loop for every single query instead of precomputing prefix sums once"
+        ],
+        "walkthrough": "Product Except Self on nums=[1,2,3,4]: left pass -> result=[1,1,2,6] (running product of everything before i). Right pass multiplies in everything after i: right_running starts at 1, i=3: result[3]*=1 -> 6, right_running=4; i=2: result[2]*=4 -> 8, right_running=12; i=1: result[1]*=12 -> 12, right_running=24; i=0: result[0]*=24 -> 24. Final: [24,12,8,6].",
+        "resources": [
+          {
+            "title": "Product of Array Except Self - Leetcode 238 - Python",
+            "creator": "NeetCode",
+            "format": "Video",
+            "priority": "REQUIRED",
+            "url": "https://www.youtube.com/watch?v=bNvIQI2wAjk",
+            "instruction": "Watch the full video. This single video covers the general prefix/suffix product pattern that also underlies Find Pivot Index and Range Sum Query — you do not need a separate video per problem today.",
+            "duration": "12 min",
+            "startTime": null,
+            "endTime": null,
+            "verifiedTitle": "Product of Array Except Self - Leetcode 238 - Python",
+            "verifiedAt": "2026-09-13"
+          }
+        ]
+      }
+    ]
+  },
+  4: {
+    "day": 4,
+    "patterns": [
+      {
+        "id": "kadane-max-subarray",
+        "name": "Kadane's Algorithm",
+        "recognition": [
+          "You need the maximum-sum CONTIGUOUS subarray",
+          "The array can contain negative numbers",
+          "You want a single O(n) pass, not O(n²) checking every subarray"
+        ],
+        "intuition": "At every index you face one decision: extend the running subarray by including this element, or abandon everything before it and restart here. Keep a running sum that always holds \"best sum of a subarray ending exactly at i\"; at each step it's max(nums[i], running + nums[i]). Track the best running sum seen across the whole pass separately — that's your answer.",
+        "template": "cur_sum = nums[0]\nmax_sum = nums[0]\nfor x in nums[1:]:\n    cur_sum = max(x, cur_sum + x)\n    max_sum = max(max_sum, cur_sum)\nreturn max_sum",
+        "complexity": {
+          "time": "O(n)",
+          "space": "O(1)"
+        },
+        "commonMistakes": [
+          "Resetting cur_sum to 0 instead of comparing extend-vs-restart — this silently breaks on all-negative arrays",
+          "Forgetting the all-negative-array edge case entirely (answer is the least-negative single element, not 0)",
+          "Confusing this with Maximum Product Subarray, which needs to track BOTH a running max and running min because a negative times a negative flips the sign"
+        ],
+        "walkthrough": "nums=[-2,1,-3,4,-1,2,1,-5,4]: cur=-2,max=-2 -> cur=max(1,-1)=1,max=1 -> cur=max(-3,-2)=-3,max=1 -> cur=max(4,1)=4,max=4 -> cur=max(-1,3)=3,max=4 -> cur=max(2,5)=5,max=5 -> cur=max(1,6)=6,max=6 -> cur=max(-5,1)=1,max=6 -> cur=max(4,5)=5,max=6. Answer: 6, from subarray [4,-1,2,1].",
+        "resources": [
+          {
+            "title": "Maximum Subarray - Amazon Coding Interview Question - Leetcode 53 - Python",
+            "creator": "NeetCode",
+            "format": "Video",
+            "priority": "REQUIRED",
+            "url": "https://www.youtube.com/watch?v=5WZl3MMT0Eg",
+            "instruction": "Watch the full video for the Kadane's-algorithm derivation.",
+            "duration": "8 min",
+            "startTime": null,
+            "endTime": null,
+            "verifiedTitle": "Maximum Subarray - Amazon Coding Interview Question - Leetcode 53 - Python",
+            "verifiedAt": "2026-09-13"
+          }
+        ]
+      },
+      {
+        "id": "prefix-sum-remainder-map",
+        "name": "Prefix Sum + Remainder/Frequency Map",
+        "recognition": [
+          "You need to COUNT (not just find) subarrays whose sum equals a target k",
+          "The array contains negative numbers or zeros, so a moving window's sum isn't monotonic",
+          "\"Continuous subarray sum\" / \"subarray sum equals k\"-style wording"
+        ],
+        "intuition": "IMPORTANT: sliding window cannot generally solve subarray-sum-equals-k problems that contain negative numbers, because sliding window relies on the window sum growing monotonically as you expand right and shrinking monotonically as you contract left — a negative number breaks that monotonicity, so \"shrink while too big\" stops being a valid strategy. Prefix sums fix this differently: track a running prefix sum and a hashmap counting how many times each prefix-sum value has occurred. A subarray (i+1..j) sums to k exactly when prefix[j] - prefix[i] = k, i.e. prefix[i] = prefix[j] - k — so at each j you just look up how many earlier prefixes equal (current prefix - k).",
+        "template": "prefix_sum = 0\ncount = 0\nseen = {0: 1}  # empty prefix occurs once, before the array starts\nfor x in nums:\n    prefix_sum += x\n    count += seen.get(prefix_sum - k, 0)\n    seen[prefix_sum] = seen.get(prefix_sum, 0) + 1\nreturn count",
+        "complexity": {
+          "time": "O(n)",
+          "space": "O(n)"
+        },
+        "commonMistakes": [
+          "Forgetting to seed seen = {0: 1} — without it you miss every subarray that starts at index 0",
+          "Incrementing seen[prefix_sum] BEFORE doing the lookup, which lets a single element incorrectly count itself against k=0",
+          "Reaching for two-pointer/sliding-window here out of habit — it silently gives wrong answers the moment a negative number appears"
+        ],
+        "walkthrough": "nums=[1,2,3], k=3: prefix=1, count+=seen.get(1-3=-2,0)=0, seen={0:1,1:1}. prefix=3, count+=seen.get(3-3=0,0)=1 (the whole-prefix [1,2] subarray) -> count=1, seen={0:1,1:1,3:1}. prefix=6, count+=seen.get(6-3=3,0)=1 (the [3] subarray) -> count=2. Answer: 2 subarrays ([1,2] and [3]).",
+        "resources": [
+          {
+            "title": "Subarray Sum Equals K - Prefix Sums - Leetcode 560 - Python",
+            "creator": "NeetCode",
+            "format": "Video",
+            "priority": "REQUIRED",
+            "url": "https://www.youtube.com/watch?v=fFVZt-6sgyo",
+            "instruction": "Watch the full video. Pay attention to why the running hashmap of prefix sums replaces a sliding window here.",
+            "duration": "15 min",
+            "startTime": null,
+            "endTime": null,
+            "verifiedTitle": "Subarray Sum Equals K - Prefix Sums - Leetcode 560 - Python",
+            "verifiedAt": "2026-09-13"
+          }
+        ]
+      }
+    ]
+  },
+  5: {
+    "day": 5,
+    "patterns": [
+      {
+        "id": "string-scan-write-pointer-encoding",
+        "name": "String Scanning, Two-Pointer Write Index and Length-Prefixed Encoding",
+        "recognition": [
+          "You're comparing characters across strings position-by-position until they diverge",
+          "You need to compress or rewrite a string in place without extra space (a \"write\" pointer trailing a \"read\" pointer)",
+          "You need to pack a LIST of strings into ONE string and unpack it losslessly later"
+        ],
+        "intuition": "For scanning problems, walk a read pointer forward and only advance a separate write pointer when you're actually committing output — this keeps compression O(1) extra space. For encode/decode, the naive idea of joining strings with a delimiter (comma, pipe, etc.) is unsafe because the delimiter character can appear inside the actual string content and corrupt the split. The fix is length-prefixing: write each chunk as \"<length>#<payload>\", so decoding reads the length first and then consumes EXACTLY that many characters — no scanning for a delimiter is needed at all, so an embedded '#' or any other character inside the payload can never be misread as a boundary.",
+        "template": "# Longest Common Prefix — scan positions across all strings\nfor i in range(len(strs[0])):\n    ch = strs[0][i]\n    for s in strs[1:]:\n        if i >= len(s) or s[i] != ch:\n            return strs[0][:i]\nreturn strs[0]\n\n# String Compression — write pointer trails read pointer\nwrite = 0\nread = 0\nwhile read < len(chars):\n    ch = chars[read]\n    count = 0\n    while read < len(chars) and chars[read] == ch:\n        read += 1\n        count += 1\n    chars[write] = ch\n    write += 1\n    if count > 1:\n        for digit in str(count):\n            chars[write] = digit\n            write += 1\n\n# Encode/Decode Strings — length-prefixed, delimiter-safe\ndef encode(strs):\n    return \"\".join(f\"{len(s)}#{s}\" for s in strs)\n\ndef decode(s):\n    result, i = [], 0\n    while i < len(s):\n        j = s.index('#', i)\n        length = int(s[i:j])\n        result.append(s[j + 1 : j + 1 + length])\n        i = j + 1 + length\n    return result",
+        "complexity": {
+          "time": "O(total characters)",
+          "space": "O(1) extra for compression; O(n) for encode/decode output"
+        },
+        "commonMistakes": [
+          "Using a plain delimiter (e.g. join with ',') — breaks the instant any string in the list contains a comma itself",
+          "Off-by-one when flushing the final run in string compression (forgetting the last group after the while-loop ends)",
+          "Not handling multi-digit run counts (e.g. count=12 must write '1' then '2', not a single character)"
+        ],
+        "walkthrough": "encode([\"ab\",\"cd\"]) -> \"2#ab2#cd\". Decoding: read \"2\" before the first '#' -> length 2 -> consume exactly \"ab\" -> next position starts at '2' again -> length 2 -> consume \"cd\". Even if a string contained a literal '#' or digit, the length prefix guarantees the decoder consumes exactly the right number of characters regardless of what's inside them.",
+        "resources": [
+          {
+            "title": "Encode and Decode Strings - Leetcode 271 - Python",
+            "creator": "NeetCode",
+            "format": "Video",
+            "priority": "REQUIRED",
+            "url": "https://www.youtube.com/watch?v=B1k_sxOSgv8",
+            "instruction": "Watch the full video. Focus on why a plain delimiter fails and how the length-prefix fixes it.",
+            "duration": "12 min",
+            "startTime": null,
+            "endTime": null,
+            "verifiedTitle": "Encode and Decode Strings - Leetcode 271 - Python",
+            "verifiedAt": "2026-09-13"
+          }
+        ]
+      }
+    ]
+  },
+  6: {
+    "day": 6,
+    "patterns": [
+      {
+        "id": "matrix-traversal-state-marking",
+        "name": "Matrix Traversal and Boundary State Marking",
+        "recognition": [
+          "You must visit matrix cells in a specific geometric order (e.g. spiral)",
+          "You need to mark rows/columns for a later mutation pass without allocating a full second grid",
+          "The problem gives explicit directional constraints (only move right/down/left/up in sequence)"
+        ],
+        "intuition": "For spiral traversal, maintain four shrinking boundaries — top, bottom, left, right — and walk right along the top row, down the right column, left along the bottom row, up the left column, shrinking whichever boundary you just finished after each leg, with a bounds check before each leg (a thin matrix can exhaust rows or columns mid-spiral). For Set Matrix Zeroes, reuse the first row and first column of the matrix itself as your \"zero this row / zero this column\" marker storage instead of allocating a separate visited structure — just snapshot whether the first row/column themselves need zeroing BEFORE you start overwriting them.",
+        "template": "# Spiral traversal boundary rules\ntop, bottom, left, right = 0, rows - 1, 0, cols - 1\nresult = []\nwhile top <= bottom and left <= right:\n    for c in range(left, right + 1): result.append(matrix[top][c])\n    top += 1\n    for r in range(top, bottom + 1): result.append(matrix[r][right])\n    right -= 1\n    if top <= bottom:\n        for c in range(right, left - 1, -1): result.append(matrix[bottom][c])\n        bottom -= 1\n    if left <= right:\n        for r in range(bottom, top - 1, -1): result.append(matrix[r][left])\n        left += 1",
+        "complexity": {
+          "time": "O(m·n)",
+          "space": "O(1) extra (excluding the output list)"
+        },
+        "commonMistakes": [
+          "Skipping the extra `if top <= bottom` / `if left <= right` guards on the third and fourth legs — a non-square matrix double-visits or skips cells without them",
+          "For Set Matrix Zeroes: overwriting the first row/column markers before you've recorded whether the first row and first column themselves originally needed zeroing"
+        ],
+        "walkthrough": "3x3 spiral: top=0,bottom=2,left=0,right=2 -> read row0 left->right, top becomes 1 -> read col2 top->bottom, right becomes 1 -> read row2 right->left (bottom still >= top so allowed), bottom becomes 1 -> read col0 bottom->top (left still <= right so allowed), left becomes 1 -> loop condition top<=bottom and left<=right now fails, stop.",
+        "resources": [
+          {
+            "title": "Spiral Matrix - Microsoft Interview Question - Leetcode 54",
+            "creator": "NeetCode",
+            "format": "Video",
+            "priority": "REQUIRED",
+            "url": "https://www.youtube.com/watch?v=BJnMZNwUk1M",
+            "instruction": "Watch the full video for the shrinking-boundary walk.",
+            "duration": "17 min",
+            "startTime": null,
+            "endTime": null,
+            "verifiedTitle": "Spiral Matrix - Microsoft Interview Question - Leetcode 54",
+            "verifiedAt": "2026-09-13"
+          }
+        ]
+      },
+      {
+        "id": "sort-merge-intervals",
+        "name": "Sort-and-Merge Intervals",
+        "recognition": [
+          "You're given a list of (start, end) ranges that may overlap",
+          "You need to merge overlapping ranges, or insert a new one, or count how many overlap simultaneously"
+        ],
+        "intuition": "Sort intervals by start time first. Once sorted, an interval can only possibly overlap with the interval immediately before it in the merged result (never one further back) — so a single pass comparing the current interval's start against the LAST MERGED interval's end is enough; no need to compare against every earlier interval.",
+        "template": "intervals.sort(key=lambda iv: iv[0])\nmerged = [intervals[0]]\nfor start, end in intervals[1:]:\n    if start <= merged[-1][1]:\n        merged[-1][1] = max(merged[-1][1], end)\n    else:\n        merged.append([start, end])",
+        "complexity": {
+          "time": "O(n log n) (sort dominates)",
+          "space": "O(n)"
+        },
+        "commonMistakes": [
+          "Forgetting to sort by start time first — the single-pass merge only works on sorted input",
+          "Using strict `<` instead of `<=` for the overlap check when touching intervals (e.g. [1,3] and [3,5]) should count as overlapping for the problem's definition",
+          "Comparing the current interval against the ORIGINAL previous interval instead of the last MERGED interval, which can have a further-extended end"
+        ],
+        "walkthrough": "[[1,3],[2,6],[8,10]] sorted (already sorted): merged=[[1,3]]. Next [2,6]: 2<=3 so merge -> merged=[[1,6]]. Next [8,10]: 8<=6 is false -> append -> merged=[[1,6],[8,10]].",
+        "resources": [
+          {
+            "title": "Merge Intervals - Sorting - Leetcode 56",
+            "creator": "NeetCode",
+            "format": "Video",
+            "priority": "REQUIRED",
+            "url": "https://www.youtube.com/watch?v=44H3cEC2fFM",
+            "instruction": "Watch the full video for the sort-then-merge derivation.",
+            "duration": "10 min",
+            "startTime": null,
+            "endTime": null,
+            "verifiedTitle": "Merge Intervals - Sorting - Leetcode 56",
+            "verifiedAt": "2026-09-13"
+          }
+        ]
+      }
+    ]
+  },
+  7: {
+    "day": 7,
+    "patterns": [
+      {
+        "id": "week1-timed-review",
+        "name": "Week 1 Timed Review",
+        "recognition": [
+          "You can name a pattern's LeetCode number but hesitate when asked why it works",
+          "You mix up which Week 1 pattern applies when two problems look superficially similar (e.g. prefix sum vs. two pointers)",
+          "You reach for brute force before checking whether a hash map/prefix-sum/matrix-traversal template already fits"
+        ],
+        "commonMistakes": [
+          "Treating this as a content day and re-watching videos instead of timing yourself against blank problems",
+          "Skipping the error log — if you don't write down which pattern you missed and why, the same gap reappears in Week 4-7 review days"
+        ],
+        "intuition": "No new pattern today — this is a recognition-speed and retention check on everything from Days 1-6 (hash sets/maps, frequency signatures/buckets, prefix sums/products, Kadane's, prefix-sum+map, string scanning/encoding, matrix traversal, interval merging).",
+        "resources": [
+          {
+            "title": "Week 1 Pattern-Recognition Checklist",
+            "creator": "Mirror49 internal",
+            "format": "Internal exercise",
+            "priority": "REQUIRED",
+            "instruction": "For each signal below, say out loud (or write) which Week 1 pattern it points to before checking the answer key.",
+            "duration": "10 min",
+            "verifiedAt": "2026-09-13",
+            "action": "Complete",
+            "content": "SIGNALS (name the pattern before revealing):\n1. \"Return true if any value appears more than once\" -> Hash set membership check\n2. \"Group these strings by shared letter composition\" -> Frequency signature (sorted-string or count-tuple) + bucket grouping\n3. \"Answer many range-sum queries on a fixed array\" -> Prefix sum array\n4. \"Find the maximum sum of a contiguous run, array may have negatives\" -> Kadane's algorithm\n5. \"Count subarrays summing to exactly k, array may have negatives\" -> Prefix sum + frequency map (NOT sliding window)\n6. \"Pack a list of strings into one string and get the exact list back\" -> Length-prefixed encoding\n7. \"Visit a grid in a specific rotating order\" -> Boundary-shrinking matrix traversal\n8. \"Merge or count overlapping (start,end) ranges\" -> Sort by start, single merge pass\n\nANSWER KEY is embedded inline above (each signal states its pattern) — score yourself: did you name the pattern before reading the arrow?"
+          },
+          {
+            "title": "Mixed-Pattern Identification Quiz",
+            "creator": "Mirror49 internal",
+            "format": "Internal exercise",
+            "priority": "REQUIRED",
+            "instruction": "Ten mixed prompts pulled from this week's problems, presented out of order. Identify the pattern for each in under 90 seconds before checking the answer.",
+            "duration": "15 min",
+            "verifiedAt": "2026-09-13",
+            "action": "Attempt",
+            "content": "1. Given an array, find if a value x and its complement (target-x) both exist. PATTERN: hash map complement lookup.\n2. Given an m x n grid, zero out full rows/columns containing a 0, in O(1) extra space. PATTERN: first-row/first-column as in-place markers.\n3. Given an array, find the maximum sum of any contiguous subarray. PATTERN: Kadane's algorithm.\n4. Merge a new interval into an already-sorted, non-overlapping list of intervals. PATTERN: sort/merge intervals (insertion variant).\n5. Given a string array, encode to one string and decode back exactly. PATTERN: length-prefixed encoding.\n6. Count the number of subarrays whose sum equals k, negatives allowed. PATTERN: prefix sum + frequency map.\n7. Given an array, return the product of all elements except self, no division. PATTERN: prefix/suffix product passes.\n8. Given an n x n matrix, return elements in spiral order. PATTERN: shrinking-boundary traversal.\n9. Group anagrams from a list of strings. PATTERN: frequency-signature bucketing.\n10. Given an array where one element appears more than n/2 times, find it. PATTERN: frequency map (or Boyer-Moore voting for O(1) space).\n\nSCORING: 9-10 = strong pattern recall, ready for Day 8. 6-8 = partial, re-read the missed pattern's primer before moving on. 0-5 = weak, re-watch the relevant Day 1-6 helper video(s) tonight."
+          },
+          {
+            "title": "45-Minute Timed DSA Mock — Instructions",
+            "creator": "Mirror49 internal",
+            "format": "Internal exercise",
+            "priority": "REQUIRED",
+            "instruction": "Run this as a real timed block before checking any notes.",
+            "duration": "45 min",
+            "verifiedAt": "2026-09-13",
+            "action": "Attempt",
+            "content": "Set a 45-minute timer. Solve, cold, without notes: 'Timed: Group Anagrams', 'Timed: Product Except Self', 'Timed: Subarray Sum Equals K' (from today's DSA problems list). For each: (1) state brute force + complexity out loud first, (2) state the optimal pattern before coding it, (3) code it, (4) dry-run one example, (5) state final time/space complexity. If you finish early, write one sentence per problem on which Week 1 pattern it maps to. Do not look up the pattern name mid-attempt — that's a 'C' result per the DSA Operating System scoring, log it honestly in the error log below rather than quietly restarting."
+          },
+          {
+            "title": "Error Log Template",
+            "creator": "Mirror49 internal",
+            "format": "Internal exercise",
+            "priority": "REQUIRED",
+            "instruction": "Fill this in immediately after the timed mock, while the mistake is still fresh.",
+            "duration": "10 min",
+            "verifiedAt": "2026-09-13",
+            "action": "Complete",
+            "content": "For each problem in today's mock, record: (1) Problem name. (2) Result (A/B/C/D per the DSA Operating System scale). (3) What pattern did you reach for first, and was it right? (4) If wrong/slow: was it a recognition failure (didn't know the pattern) or an execution failure (knew the pattern, coded it wrong)? (5) One concrete fix for next time (e.g. 'seed seen={0:1} before the loop', 'sort before merging', 'use count-tuple not sorted-string for long strings'). (6) Revisit date per the DSA Operating System table (1/3/7/14 days depending on result)."
+          },
+          {
+            "title": "Week 1 Review Rubric",
+            "creator": "Mirror49 internal",
+            "format": "Internal exercise",
+            "priority": "REQUIRED",
+            "instruction": "Score your own week honestly against these four bars before moving to Week 2.",
+            "duration": "5 min",
+            "verifiedAt": "2026-09-13",
+            "action": "Complete",
+            "content": "PASS bar for Week 1 DSA (all four required):\n1. You can name the correct pattern for a Week 1-style problem within 30 seconds of reading it, without seeing the problem title.\n2. You can write the hash-set/hash-map, prefix-sum, Kadane's, and sort-merge-intervals templates from memory, not from notes.\n3. You scored at least 6/10 on the Mixed-Pattern Identification Quiz above.\n4. You completed the 45-minute timed mock and logged every miss in the error log — not just the ones you got right.\n\nIf any bar is unmet, spend 20-30 minutes tonight on the specific weak pattern (re-watch its helper video, redo its template from memory) before starting Day 8 — do not silently carry the gap into Week 2."
+          }
+        ]
+      }
+    ]
+  },
+  8: {
+    "day": 8,
+    "patterns": [
+      {
+        "id": "two-pointers",
+        "name": "Two Pointers (Opposite-Direction and Same-Direction)",
+        "recognition": [
+          "The array or string is already sorted, or sortedness would help",
+          "You need to check a property that depends on two positions moving toward or away from each other (e.g. a palindrome, a pair summing to a target)",
+          "You need to overwrite an array in place while reading ahead of the write position (in-place dedupe/compaction)"
+        ],
+        "intuition": "Opposite-direction two pointers start at both ends of a sorted or symmetric structure and move inward, eliminating one end per step based on a comparison — this turns an O(n^2) pair-search into O(n). Same-direction (read/write) two pointers use a slow 'write' index and a fast 'read' index scanning left to right, letting you compact or filter a sequence in place in one pass.",
+        "template": "# Opposite-direction (e.g. sorted pair search / palindrome check)\nleft, right = 0, len(arr) - 1\nwhile left < right:\n    if condition_met(arr[left], arr[right]):\n        # record / return\n        left += 1\n        right -= 1\n    elif need_bigger:\n        left += 1\n    else:\n        right -= 1\n\n# Same-direction read/write (e.g. remove duplicates in place)\nwrite = 1\nfor read in range(1, len(arr)):\n    if arr[read] != arr[write - 1]:\n        arr[write] = arr[read]\n        write += 1\n# write is now the new logical length",
+        "complexity": {
+          "time": "O(n)",
+          "space": "O(1)"
+        },
+        "commonMistakes": [
+          "Using two pointers on unsorted data expecting sorted-array guarantees to still hold",
+          "Off-by-one on the opposite-direction loop condition (using <= vs < changes whether the middle element is revisited)",
+          "Forgetting that the same-direction write pointer must never advance past the read pointer"
+        ],
+        "walkthrough": "Valid Palindrome on \"a man a plan a canal panama\" (alnum, lowercased): left starts at 'a', right at 'a' — match, both move inward. Continue until left crosses right without a mismatch -> palindrome. Remove Duplicates on [0,0,1,1,2]: write=1; read=1 sees 0==arr[write-1]=0, skip; read=2 sees 1 != 0, arr[1]=1, write=2; read=3 sees 1==1, skip; read=4 sees 2!=1, arr[2]=2, write=3 -> result length 3, array [0,1,2,...].",
+        "resources": [
+          {
+            "title": "Valid Palindrome - Leetcode 125 - Python",
+            "creator": "NeetCode",
+            "format": "Video",
+            "priority": "REQUIRED",
+            "url": "https://www.youtube.com/watch?v=jJXJ16kPFWg",
+            "instruction": "Watch the full video — this is the opposite-direction two-pointer pattern applied to a real problem, explained as a reusable technique, not just an answer.",
+            "duration": "15 min",
+            "startTime": null,
+            "endTime": null,
+            "verifiedTitle": "Valid Palindrome - Leetcode 125 - Python",
+            "verifiedAt": "2026-09-13"
+          }
+        ]
+      }
+    ]
+  },
+  9: {
+    "day": 9,
+    "patterns": [
+      {
+        "id": "two-pointers-sorted",
+        "name": "Two Pointers After Sorting (Pair/Triple Search)",
+        "recognition": [
+          "You're searching for a pair or triple of elements satisfying a sum/comparison target",
+          "Sorting the array first would expose a monotonic way to narrow the search",
+          "The brute-force approach is O(n^2) or O(n^3) nested loops over pairs/triples"
+        ],
+        "intuition": "Sort first, then walk two pointers inward from the ends. At each step the pair sum tells you which pointer to move: if the sum is too small, the only way to increase it is to move the left pointer right (since the array is sorted, every element left of right is <= arr[right]); if too big, move right left. For k-sum style problems (3Sum), fix one element and run this exact two-pointer sweep on the remaining sorted subarray, skipping over duplicate values at each of the three positions so you don't emit the same triple twice. The same fixed-then-two-pointer reduction generalizes to 4Sum and beyond (general sorted k-sum), though that's optional context beyond today's problems.",
+        "template": "nums.sort()\nresult = []\nfor i in range(len(nums)):\n    if i > 0 and nums[i] == nums[i-1]:\n        continue  # skip duplicate 'first' element\n    left, right = i + 1, len(nums) - 1\n    while left < right:\n        total = nums[i] + nums[left] + nums[right]\n        if total < target:\n            left += 1\n        elif total > target:\n            right -= 1\n        else:\n            result.append((nums[i], nums[left], nums[right]))\n            left += 1\n            right -= 1\n            while left < right and nums[left] == nums[left-1]:\n                left += 1  # skip duplicate 'left' element",
+        "complexity": {
+          "time": "O(n^2)",
+          "space": "O(1) extra (O(n) or O(log n) for the sort itself, excluding the output list)"
+        },
+        "commonMistakes": [
+          "Forgetting to skip duplicate values after finding a valid triple, producing repeated answers",
+          "Sorting but then not using the sortedness — falling back to a nested loop anyway",
+          "For Container With Most Water specifically: assuming moving the *taller* wall inward can ever help — it can't, since the width shrinks and the height is capped by the shorter wall either way, so only moving the shorter wall has any chance of finding a bigger area"
+        ],
+        "walkthrough": "3Sum on [-1,0,1,2,-1,-4] sorted -> [-4,-1,-1,0,1,2]. Fix i=1 (-1): left=2(-1), right=5(2), sum=-3 < 0 -> left++. left=3(0): sum=-1+0+2=1>0 -> right--. left=3(0), right=4(1): sum=-1+0+1=0 -> record (-1,0,1); move both, loop ends for this i.",
+        "resources": [
+          {
+            "title": "3Sum - Leetcode 15 - Python",
+            "creator": "NeetCode",
+            "format": "Video",
+            "priority": "REQUIRED",
+            "url": "https://www.youtube.com/watch?v=jzZsG8n2R9A",
+            "instruction": "Watch the full video — covers the sort-then-two-pointer reduction and duplicate-skipping, which is the reusable technique for all of today's problems.",
+            "duration": "13 min",
+            "startTime": null,
+            "endTime": null,
+            "verifiedTitle": "3Sum - Leetcode 15 - Python",
+            "verifiedAt": "2026-09-13"
+          }
+        ]
+      }
+    ]
+  },
+  10: {
+    "day": 10,
+    "patterns": [
+      {
+        "id": "fixed-sliding-window",
+        "name": "Fixed-Size Sliding Window",
+        "recognition": [
+          "The problem asks about every contiguous subarray/substring of one fixed length k",
+          "You're comparing a running count/sum/frequency against a fixed-size target window",
+          "Recomputing from scratch for every window would be O(n*k); you need O(n)"
+        ],
+        "intuition": "Build the first window of size k directly, then slide it one position at a time: remove the element leaving the window on the left, add the element entering on the right, and update your running statistic (sum, frequency map, etc.) incrementally instead of recomputing it. This turns an O(n*k) scan into O(n).",
+        "template": "window_state = init_state(arr[:k])\nbest = evaluate(window_state)\nfor i in range(k, len(arr)):\n    add(window_state, arr[i])\n    remove(window_state, arr[i - k])\n    best = better(best, evaluate(window_state))\nreturn best",
+        "complexity": {
+          "time": "O(n)",
+          "space": "O(1) for a running sum, O(alphabet size) for a frequency array"
+        },
+        "commonMistakes": [
+          "Recomputing the whole window's statistic on every slide instead of updating it incrementally",
+          "Off-by-one on the window bounds when the array length isn't a clean multiple of k",
+          "Using a full frequency map when a fixed-size frequency array (e.g. 26 letters) would be simpler and faster"
+        ],
+        "walkthrough": "Permutation in String: s1=\"ab\", s2=\"eidbaooo\". Build a 26-length count array for s1 and for the first window of s2 of length 2 (\"ei\"). Slide: drop 'e', add 'd' -> \"id\"; drop 'i', add 'b' -> \"db\"; drop 'd', add 'a' -> \"ba\" — compare counts each time; \"ba\" matches s1's counts (a permutation of \"ab\") -> found.",
+        "resources": [
+          {
+            "title": "Permutation in String - Leetcode 567 - Python",
+            "creator": "NeetCode",
+            "format": "Video",
+            "priority": "REQUIRED",
+            "url": "https://www.youtube.com/watch?v=UbyhOgBN834",
+            "instruction": "Watch the full video — canonical fixed-size sliding window with incremental frequency-array updates.",
+            "duration": "20 min",
+            "startTime": null,
+            "endTime": null,
+            "verifiedTitle": "Permutation in String - Leetcode 567 - Python",
+            "verifiedAt": "2026-09-13"
+          }
+        ]
+      }
+    ]
+  },
+  11: {
+    "day": 11,
+    "patterns": [
+      {
+        "id": "variable-sliding-window",
+        "name": "Variable-Size Sliding Window",
+        "recognition": [
+          "You need the longest or shortest contiguous subarray/substring satisfying some condition",
+          "The window's validity is monotonic: once valid (or invalid), shrinking/growing in one direction preserves that property in a predictable way",
+          "You're tracking a running count/set/sum that needs to stay within a bound as the window changes"
+        ],
+        "intuition": "Expand the window by moving the right pointer forward one element at a time, updating your running state. Whenever the window becomes invalid (violates the constraint), shrink it from the left — moving the left pointer forward and updating state — until it's valid again. Because each pointer only ever moves forward, the total work across the whole scan is O(n), even though it looks like nested loops. The exact invariant differs per problem: for Longest Substring Without Repeating Characters, the invariant is 'no character in the window appears twice' (shrink left while a duplicate exists); for Longest Repeating Character Replacement, the invariant is 'window length - count of the most frequent character <= k replacements' (shrink left while that's violated); for Minimum Size Subarray Sum, the invariant is 'window sum >= target' is what you're trying to first achieve, then shrink left while it still holds to minimize length.",
+        "template": "left = 0\nstate = init_state()\nbest = default_best\nfor right in range(len(arr)):\n    add(state, arr[right])\n    while not is_valid(state):\n        remove(state, arr[left])\n        left += 1\n    best = better(best, right - left + 1)  # or track differently for min-length problems\nreturn best",
+        "complexity": {
+          "time": "O(n) — each pointer visits every index at most once",
+          "space": "O(min(n, alphabet size)) for the tracking set/map"
+        },
+        "commonMistakes": [
+          "Shrinking the window with an `if` instead of a `while`, which only fixes one step of invalidity instead of restoring the invariant fully",
+          "Forgetting to update the running state (count/sum) when an element leaves the window on the left",
+          "Conflating 'longest valid window' problems (track a running best) with 'shortest valid window' problems (shrink as much as possible once valid) — the loop direction of the inner while differs"
+        ],
+        "walkthrough": "Longest Substring Without Repeating Characters on \"abcabcbb\": right scans a,b,c (all new, window \"abc\", best=3); right=a (duplicate) -> shrink left past the first 'a', window becomes \"bca\"; continue similarly — best stays 3 throughout since no longer valid window exists.",
+        "resources": [
+          {
+            "title": "Longest Substring Without Repeating Characters - Leetcode 3 - Python",
+            "creator": "NeetCode",
+            "format": "Video",
+            "priority": "REQUIRED",
+            "url": "https://www.youtube.com/watch?v=wiGpQwVHdE0",
+            "instruction": "Watch the full video — the shortest, cleanest introduction to the expand-right/shrink-left invariant that all three of today's problems share.",
+            "duration": "7 min",
+            "startTime": null,
+            "endTime": null,
+            "verifiedTitle": "Longest Substring Without Repeating Characters - Leetcode 3 - Python",
+            "verifiedAt": "2026-09-13"
+          }
+        ]
+      }
+    ]
+  },
+  12: {
+    "day": 12,
+    "patterns": [
+      {
+        "id": "advanced-variable-window",
+        "name": "Advanced Variable Window (Required vs Formed / At-Most-K)",
+        "recognition": [
+          "You need every character/element of a target set to be present in the window (not just 'no duplicates') — a 'required vs formed' counting problem",
+          "The problem says 'at most K distinct' or 'at most K of a category' — reframe it as a variable window with a category-count constraint",
+          "A naive check-the-whole-window-every-time approach would be O(n * window size); you need one that's O(n) by tracking counts incrementally"
+        ],
+        "intuition": "This is the same expand-right/shrink-left skeleton as yesterday's variable window, but the validity check itself is more expensive to reason about naively, so you track it with two numbers instead of rescanning the window: `required` (how many distinct target elements/categories you need) and `formed` (how many of those you currently have 'enough' of in the window). Incrementing a count to exactly the needed amount increments `formed`; when `formed == required`, the window is valid. For 'at most K' problems (Fruit Into Baskets = at most 2 distinct categories, Max Consecutive Ones III = at most K zeros flippable), the same shrink-while-invalid loop applies with a simpler single-number constraint (distinct count or flip count) instead of the required/formed pair.",
+        "template": "while window invalid:\n    remove(state, arr[left])\n    left += 1\n\n# full skeleton for 'required vs formed'\nneed = Counter(target)\nrequired = len(need)\nformed = 0\nwindow_counts = {}\nleft = 0\nbest = None\nfor right, ch in enumerate(s):\n    window_counts[ch] = window_counts.get(ch, 0) + 1\n    if ch in need and window_counts[ch] == need[ch]:\n        formed += 1\n    while formed == required:\n        best = better(best, (left, right))\n        window_counts[s[left]] -= 1\n        if s[left] in need and window_counts[s[left]] < need[s[left]]:\n            formed -= 1\n        left += 1",
+        "complexity": {
+          "time": "O(n)",
+          "space": "O(k) where k is the size of the target character/category set"
+        },
+        "commonMistakes": [
+          "Decrementing `formed` on every removal instead of only when a count drops *below* its required threshold",
+          "Rescanning the whole window to check validity instead of maintaining `formed`/`required` (or a distinct-count) incrementally",
+          "For 'at most K' problems: writing 'exactly K' shrink logic by accident, which silently breaks on inputs needing fewer than K"
+        ],
+        "walkthrough": "Minimum Window Substring: s=\"ADOBECODEBANC\", t=\"ABC\" (required=3). Expand right until formed==3 (window \"ADOBEC\"), record length 6, then shrink left while still formed==3: drop 'A' -> formed drops to 2 (since 'A' count now below need), stop shrinking, keep expanding right. Continue; a later window \"BANC\" (length 4) becomes the new best.",
+        "resources": [
+          {
+            "title": "Minimum Window Substring - Airbnb Interview Question - Leetcode 76",
+            "creator": "NeetCode",
+            "format": "Video",
+            "priority": "REQUIRED",
+            "url": "https://www.youtube.com/watch?v=jSto0O4AJbM",
+            "instruction": "Watch the full video — the canonical required/formed counting walkthrough that generalizes directly to today's other two problems.",
+            "duration": "26 min",
+            "startTime": null,
+            "endTime": null,
+            "verifiedTitle": "Minimum Window Substring - Airbnb Interview Question - Leetcode 76",
+            "verifiedAt": "2026-09-13"
+          }
+        ]
+      }
+    ]
+  },
+  13: {
+    "day": 13,
+    "patterns": [
+      {
+        "id": "interval-sort-merge",
+        "name": "Interval Sorting and Merging",
+        "recognition": [
+          "You're given a list of (start, end) intervals and need to combine or insert into overlapping ones",
+          "Two intervals overlap when one's start is <= the other's end (after sorting by start)",
+          "The problem asks for the resulting merged/combined set of intervals, not a count"
+        ],
+        "intuition": "Sort intervals by start time. Then walk through once: if the current interval's start is <= the last merged interval's end, they overlap — merge by extending the last interval's end to the max of the two ends. Otherwise, the current interval starts a new, disjoint group. Insert Interval is the same idea applied incrementally: intervals strictly before the new one pass through unchanged, intervals overlapping it get merged into it, and intervals strictly after pass through unchanged.",
+        "template": "intervals.sort(key=lambda iv: iv[0])\nmerged = [intervals[0]]\nfor start, end in intervals[1:]:\n    last_start, last_end = merged[-1]\n    if start <= last_end:  # overlap\n        merged[-1] = (last_start, max(last_end, end))\n    else:\n        merged.append((start, end))",
+        "complexity": {
+          "time": "O(n log n) for the sort, O(n) for the merge pass",
+          "space": "O(n) for the output"
+        },
+        "commonMistakes": [
+          "Using strict < instead of <= for the overlap check, which misses intervals that touch exactly at the boundary (depends on whether the problem treats touching as overlapping — read the spec)",
+          "Forgetting to sort first — the single-pass merge only works because the intervals are in start order",
+          "Merging by taking max(end) but forgetting the min(start) is unnecessary since sorting already guarantees the current start is >= the group's start"
+        ],
+        "walkthrough": "Insert Interval: existing [[1,3],[6,9]], new interval [2,5]. [1,3] overlaps [2,5] (1<=5 and 2<=3) -> merge to [1,5]. [6,9] doesn't overlap [1,5] (6>5) -> passes through. Result: [[1,5],[6,9]].",
+        "resources": [
+          {
+            "title": "Insert Interval - Leetcode 57 - Python",
+            "creator": "NeetCode",
+            "format": "Video",
+            "priority": "REQUIRED",
+            "url": "https://www.youtube.com/watch?v=A8NUOmlwOlM",
+            "instruction": "Watch the full video — today's actual first problem, and the cleanest teaching example of the sort/merge-boundary technique.",
+            "duration": "12 min",
+            "startTime": null,
+            "endTime": null,
+            "verifiedTitle": "Insert Interval - Leetcode 57 - Python",
+            "verifiedAt": "2026-09-13"
+          }
+        ]
+      },
+      {
+        "id": "interval-sweep-heap",
+        "name": "Sweep Line / Min-Heap Interval Scheduling",
+        "recognition": [
+          "You need to count how many intervals are simultaneously active at some point, not just merge them",
+          "The problem asks for a minimum number of 'resources' (rooms, servers) to satisfy overlapping demand",
+          "You need to greedily select a maximum set of non-overlapping intervals"
+        ],
+        "intuition": "Counting simultaneous overlap is different from merging: sort start times and end times separately (or push (time, +1/-1) events and sort by time), then sweep through — each start increments a running 'active count' and each end decrements it; the peak of that running count is your answer (e.g. minimum meeting rooms). A min-heap variant tracks the earliest-ending active interval: for each new interval, if the earliest end in the heap is <= the new start, that room frees up (pop it) before pushing the new interval's end; the heap's size at any point is rooms in use. This is a different goal from merging — merging asks 'what's the union shape', counting asks 'what's the peak simultaneous demand', and greedy selection (Non-overlapping Intervals) asks 'what's the largest subset with zero overlaps', solved by sorting by *end* time and greedily keeping an interval only if it starts after the last kept interval's end.",
+        "template": "# Peak simultaneous count via sorted start/end sweep\nstarts = sorted(iv[0] for iv in intervals)\nends = sorted(iv[1] for iv in intervals)\ns = e = 0\nrooms = 0\npeak = 0\nwhile s < len(starts):\n    if starts[s] < ends[e]:\n        rooms += 1\n        s += 1\n        peak = max(peak, rooms)\n    else:\n        rooms -= 1\n        e += 1\nreturn peak\n\n# Greedy max non-overlapping subset\nintervals.sort(key=lambda iv: iv[1])  # sort by END\nlast_end = float('-inf')\nkept = 0\nfor start, end in intervals:\n    if start >= last_end:\n        kept += 1\n        last_end = end",
+        "complexity": {
+          "time": "O(n log n)",
+          "space": "O(n) for the heap/sorted arrays"
+        },
+        "commonMistakes": [
+          "Sorting by start time for the greedy 'max non-overlapping subset' problem instead of end time — sorting by end is what makes the greedy choice provably optimal",
+          "Using < instead of <= (or vice versa) in the sweep comparison, which double counts or misses intervals that touch exactly at a boundary",
+          "Reaching for a min-heap when a simple sorted-starts/sorted-ends two-pointer sweep would do — the heap is only needed when you must know *which* interval frees up, not just the count"
+        ],
+        "walkthrough": "Meeting Rooms II on [[0,30],[5,10],[15,20]]: starts=[0,5,15], ends=[10,20,30]. s=0,e=0: 0<10 -> rooms=1,peak=1,s=1. 5<10 -> rooms=2,peak=2,s=2. 15<10? no -> rooms=1,e=1. 15<20? yes -> rooms=2,peak stays 2,s=3, loop ends. Answer: 2 rooms.",
+        "resources": [
+          {
+            "title": "Meeting Rooms II - Leetcode 253 - Python",
+            "creator": "NeetCode",
+            "format": "Video",
+            "priority": "REQUIRED",
+            "url": "https://www.youtube.com/watch?v=FdzJmTCVyJU",
+            "instruction": "Watch the full video — today's second, genuinely different pattern: peak-overlap counting via a sorted sweep, distinct from the merge pattern above.",
+            "duration": "12 min",
+            "startTime": null,
+            "endTime": null,
+            "verifiedTitle": "Meeting Rooms II - Leetcode 253 - Python",
+            "verifiedAt": "2026-09-13"
+          }
+        ]
+      }
+    ]
+  },
+  14: {
+    "day": 14,
+    "patterns": [
+      {
+        "id": "week2-review",
+        "name": "Week 2 Pattern Recognition Review",
+        "recognition": [
+          "No new pattern today — this consolidates two pointers, sliding window and intervals from Days 8-13"
+        ],
+        "intuition": "A timed review day: recognize which pattern applies before writing any code, then verify against the invariant you actually used.",
+        "commonMistakes": [
+          "Defaulting to sliding window for every subarray problem, even ones with negative numbers or non-monotonic validity where it doesn't apply",
+          "Confusing 'merge intervals' with 'count overlapping intervals' — they solve different questions and use different sort keys"
+        ],
+        "resources": [
+          {
+            "title": "Week 2 Recognition Quiz",
+            "creator": "Mirror49 internal",
+            "format": "Internal exercise",
+            "priority": "REQUIRED",
+            "instruction": "Answer without looking at your notes, then check yourself against the answer key.",
+            "duration": "12 min",
+            "verifiedAt": "2026-09-13",
+            "action": "Attempt",
+            "content": "QUESTIONS\n\n1. Given a sorted array, find if any two numbers sum to a target. Which pattern, and why not a hash set here?\n2. You need the longest substring with at most 2 distinct characters. Which pattern, and what's the shrink condition?\n3. You're asked whether an array read backwards equals itself. Which two-pointer direction?\n4. You need to know the minimum number of overlapping meetings at any instant. Merge intervals, or sweep/count? Why?\n5. You need to produce the union of a set of possibly-overlapping intervals. Merge intervals, or sweep/count? Why?\n6. A problem asks for the maximum subarray of a FIXED length k with the largest sum. Fixed or variable sliding window?\n7. A problem asks for the SHORTEST subarray with sum >= target. Fixed or variable sliding window, and which direction does the window move first (expand or shrink)?\n8. Why does the two-pointer 3Sum reduction require sorting first, when hashing doesn't?\n\nANSWER KEY\n\n1. Two pointers (opposite direction) after confirming sorted — O(1) space vs a hash set's O(n) space; if it's not sorted, a hash set is actually the better choice, so check sortedness first.\n2. Variable sliding window with an 'at most K distinct' constraint (a frequency map keyed by character, shrink left while distinct count > 2).\n3. Opposite-direction (palindrome check compares mirrored positions).\n4. Sweep/count (peak simultaneous overlap) — merging only tells you the union shape, not how many were active at once.\n5. Merge intervals (sort by start, extend end on overlap) — sweep/count would only give you a number, not the resulting intervals.\n6. Fixed-size sliding window (k is constant).\n7. Variable sliding window; expand right until valid (sum >= target), then shrink left while still valid to minimize.\n8. Sorting gives you a monotonic direction to move each pointer (increase sum -> move left up, decrease sum -> move right down) — without sorting there's no way to know which pointer to move without checking all pairs."
+          },
+          {
+            "title": "Sliding-Window Invariant Checklist",
+            "creator": "Mirror49 internal",
+            "format": "Internal exercise",
+            "priority": "REQUIRED",
+            "instruction": "Before coding any sliding-window problem this week, write down these four answers first.",
+            "duration": "5 min",
+            "verifiedAt": "2026-09-13",
+            "action": "Complete",
+            "content": "1. What does the window need to satisfy to be 'valid'? (write it as a boolean condition on your tracked state)\n2. What state do you update when the right pointer adds an element?\n3. What state do you update when the left pointer removes an element?\n4. Are you tracking the LONGEST valid window (keep a running best while valid) or the SHORTEST valid window (shrink as far as possible once valid)? These use the while-loop in opposite places."
+          },
+          {
+            "title": "Two-Pointer vs Sliding-Window Comparison",
+            "creator": "Mirror49 internal",
+            "format": "Internal exercise",
+            "priority": "OPTIONAL",
+            "instruction": "A reference note, not a task — read once if the distinction still feels fuzzy.",
+            "duration": "5 min",
+            "verifiedAt": "2026-09-13",
+            "action": "Read",
+            "content": "Two pointers (opposite-direction) answers yes/no or finds a pair/triple by narrowing a SORTED search space from both ends — no notion of a 'window' of elements in between being tracked as a group.\n\nSliding window tracks a CONTIGUOUS RANGE (the window) and asks about a property of everything currently inside it (sum, distinct count, frequency match) — the range grows and shrinks, but the elements between left and right always matter as a group, not just the two boundary elements.\n\nRule of thumb: if the question is about a pair/triple of values, think two pointers; if the question is about a contiguous run/substring/subarray's aggregate property, think sliding window."
+          }
+        ]
+      }
+    ]
+  },
+  15: {
+    "day": 15,
+    "patterns": [
+      {
+        "id": "stack-lifo",
+        "name": "Stack / LIFO Processing",
+        "recognition": [
+          "You need to match or validate nested pairs (brackets, tags)",
+          "You need 'undo' or most-recent-first processing order",
+          "You're evaluating postfix/RPN expressions where operators act on the most recently seen operands"
+        ],
+        "intuition": "A stack processes the most recently seen item first (LIFO). Push each new element; when you hit something that should 'close' or 'consume' the most recent element(s), pop and check/combine. If the stack is exactly empty when input ends, everything matched cleanly.",
+        "template": "# Matching-pair stack (Valid Parentheses)\nstack = []\npairs = {')': '(', ']': '[', '}': '{'}\nfor ch in s:\n    if ch in '([{':\n        stack.append(ch)\n    else:\n        if not stack or stack.pop() != pairs[ch]:\n            return False\nreturn not stack\n\n# Auxiliary minimum state (Min Stack)\nstack = []  # each entry: (value, min_so_far)\ndef push(x):\n    m = x if not stack else min(x, stack[-1][1])\n    stack.append((x, m))\ndef get_min():\n    return stack[-1][1]\n\n# Postfix / RPN evaluation\nstack = []\nfor token in tokens:\n    if token in ('+', '-', '*', '/'):\n        b, a = stack.pop(), stack.pop()   # b popped first -> right-hand operand\n        stack.append(apply(token, a, b))\n    else:\n        stack.append(int(token))\nreturn stack[0]",
+        "complexity": {
+          "time": "O(n)",
+          "space": "O(n)"
+        },
+        "commonMistakes": [
+          "Popping from an empty stack without checking first",
+          "In RPN, swapping operand order — the value popped SECOND is the left-hand operand; this matters for - and /",
+          "Forgetting the stack must be empty at the end for Valid Parentheses — an unclosed opening bracket is still invalid even with zero mismatches"
+        ],
+        "walkthrough": "s = '([)]': push '(', push '[', see ')' -> pop '[' which != '(' -> return False immediately.\nContrast with s = '([])': push '(', push '[', see ']' -> pop '[' matches, see ')' -> pop '(' matches, stack empty at end -> True.",
+        "resources": [
+          {
+            "title": "Valid Parentheses - Stack - Leetcode 20 - Python",
+            "creator": "NeetCode",
+            "format": "Video",
+            "priority": "REQUIRED",
+            "url": "https://www.youtube.com/watch?v=WTzjTskDFMg",
+            "instruction": "Watch the full video — the matching-pair stack pattern it teaches covers Min Stack and RPN too once you see the core LIFO idea.",
+            "duration": "11 min",
+            "startTime": null,
+            "endTime": null,
+            "verifiedTitle": "Valid Parentheses - Stack - Leetcode 20 - Python",
+            "verifiedAt": "2026-09-13"
+          }
+        ]
+      }
+    ]
+  },
+  16: {
+    "day": 16,
+    "patterns": [
+      {
+        "id": "monotonic-stack",
+        "name": "Monotonic Stack",
+        "recognition": [
+          "You need the next/previous greater or smaller element for every index",
+          "Brute force would be O(n^2), comparing every pair",
+          "The answer for index i depends on the nearest unresolved index to its left or right satisfying a comparison"
+        ],
+        "intuition": "Walk the array once, keeping a stack of indices whose answer isn't resolved yet. The stack stays monotonic (increasing or decreasing); whenever the current element breaks that order, it resolves whatever is on top of the stack — pop, record the answer, repeat, then push the current index.",
+        "template": "# Decreasing stack -> next greater element (Daily Temperatures)\nstack = []  # indices; temperatures[stack] is decreasing\nresult = [0] * len(temperatures)\nfor i, t in enumerate(temperatures):\n    while stack and temperatures[stack[-1]] < t:\n        j = stack.pop()\n        result[j] = i - j\n    stack.append(i)\nreturn result\n\n# Largest Rectangle in Histogram (increasing stack, width formula)\nstack = []  # indices; heights[stack] is increasing\nmax_area = 0\nfor i, h in enumerate(heights + [0]):   # sentinel 0 flushes the stack\n    while stack and heights[stack[-1]] >= h:\n        height = heights[stack.pop()]\n        width = i if not stack else i - stack[-1] - 1\n        max_area = max(max_area, height * width)\n    stack.append(i)\nreturn max_area",
+        "complexity": {
+          "time": "O(n)",
+          "space": "O(n)"
+        },
+        "commonMistakes": [
+          "Storing values instead of indices — you usually need the index to compute a distance or width, not just the value",
+          "Using >= vs > inconsistently, which silently changes whether equal elements resolve each other",
+          "Forgetting the sentinel/cleanup pass (e.g. an appended 0-height bar) to flush everything still on the stack at the end"
+        ],
+        "walkthrough": "temperatures=[73,74,75,71,69,72]: stack=[0]; 74>73 -> pop 0, result[0]=1, push 1; 75>74 -> pop 1, result[1]=1, push 2; 71<75 -> push 3; 69<71 -> push 4; 72>69 -> pop 4, result[4]=1; 72>71 -> pop 3, result[3]=2; push 5. Indices 2 and 5 stay unresolved (0).",
+        "resources": [
+          {
+            "title": "Daily Temperatures - Monotonic Stack - Leetcode 739 - Python",
+            "creator": "NeetCode",
+            "format": "Video",
+            "priority": "REQUIRED",
+            "url": "https://www.youtube.com/watch?v=cTBiBSnjO3c",
+            "instruction": "Watch the full video for the decreasing-stack pattern, then read the walkthrough above for how the same idea flips to an increasing stack for Largest Rectangle's width formula.",
+            "duration": "12 min",
+            "startTime": null,
+            "endTime": null,
+            "verifiedTitle": "Daily Temperatures - Monotonic Stack - Leetcode 739 - Python",
+            "verifiedAt": "2026-09-13"
+          }
+        ]
+      }
+    ]
+  },
+  17: {
+    "day": 17,
+    "patterns": [
+      {
+        "id": "binary-search-invariants",
+        "name": "Binary Search Invariants",
+        "recognition": [
+          "Input is sorted (or reframable as a monotonic yes/no predicate)",
+          "You need O(log n) instead of an O(n) scan",
+          "You're looking for an exact value, or the boundary where a condition flips from false to true"
+        ],
+        "intuition": "Use the half-open interval [left, right) convention throughout: right starts at len(nums) (one past the last valid index), and the loop invariant is 'the answer, if it exists, is always inside [left, right)'. Every iteration either finds the target or strictly shrinks the interval, so no index is examined pointlessly twice.",
+        "template": "# Exact match\nleft, right = 0, len(nums)\nwhile left < right:\n    mid = (left + right) // 2\n    if nums[mid] == target:\n        return mid\n    elif nums[mid] < target:\n        left = mid + 1\n    else:\n        right = mid\nreturn -1\n\n# Lower bound: first index where nums[i] >= target\nleft, right = 0, len(nums)\nwhile left < right:\n    mid = (left + right) // 2\n    if nums[mid] < target:\n        left = mid + 1\n    else:\n        right = mid\nreturn left   # insertion point / first index >= target\n\n# Upper bound: first index where nums[i] > target\n# identical shape, only the comparison flips to nums[mid] <= target",
+        "complexity": {
+          "time": "O(log n)",
+          "space": "O(1)"
+        },
+        "commonMistakes": [
+          "Mixing [left, right] and [left, right) conventions in the same solution — pick one and apply it consistently",
+          "Using mid = (left+right)//2 with a CLOSED right bound and then reading nums[mid] out of bounds on an empty range",
+          "Returning the insertion point (`left`) without checking it's < len(nums) and actually equals target, when an exact match is required rather than a boundary"
+        ],
+        "walkthrough": "nums=[1,3,3,3,5], target=3, lower bound: left=0,right=5 -> mid=2, nums[2]=3>=3 -> right=2 -> mid=1, nums[1]=3>=3 -> right=1 -> mid=0, nums[0]=1<3 -> left=1 -> left==right==1: first index >=3 is 1.",
+        "resources": [
+          {
+            "title": "Binary Search - Leetcode 704 - Python",
+            "creator": "NeetCode",
+            "format": "Video",
+            "priority": "REQUIRED",
+            "url": "https://www.youtube.com/watch?v=s4DPM8ct1pI",
+            "instruction": "Watch the full video for the core invariant, then read the lower/upper-bound templates above — Search Insert Position and First/Last Position are both direct applications of the same [left, right) loop.",
+            "duration": "10 min",
+            "startTime": null,
+            "endTime": null,
+            "verifiedTitle": "Binary Search - Leetcode 704 - Python",
+            "verifiedAt": "2026-09-13"
+          }
+        ]
+      }
+    ]
+  },
+  18: {
+    "day": 18,
+    "patterns": [
+      {
+        "id": "rotated-binary-search",
+        "name": "Binary Search on a Rotated Sorted Array",
+        "recognition": [
+          "Array is sorted but rotated at an unknown pivot",
+          "You still need O(log n), so a linear pivot-finding pass first is wasteful",
+          "The whole array isn't monotonic, but at every midpoint, one of the two halves always is"
+        ],
+        "intuition": "At every mid, check which half — [left, mid] or [mid, right] — is normally sorted (compare its endpoints). Then check whether target falls within that sorted half's value range: if yes, recurse into it; if no, the target must be in the other half.",
+        "template": "left, right = 0, len(nums) - 1\nwhile left <= right:\n    mid = (left + right) // 2\n    if nums[mid] == target:\n        return mid\n    if nums[left] <= nums[mid]:          # left half is sorted\n        if nums[left] <= target < nums[mid]:\n            right = mid - 1\n        else:\n            left = mid + 1\n    else:                                 # right half is sorted\n        if nums[mid] < target <= nums[right]:\n            left = mid + 1\n        else:\n            right = mid - 1\nreturn -1\n\n# Find Minimum in Rotated Sorted Array: same idea, compare nums[mid] to nums[right]\nleft, right = 0, len(nums) - 1\nwhile left < right:\n    mid = (left + right) // 2\n    if nums[mid] > nums[right]:\n        left = mid + 1     # minimum is to the right of mid\n    else:\n        right = mid         # minimum is at mid or to its left\nreturn nums[left]",
+        "complexity": {
+          "time": "O(log n)",
+          "space": "O(1)"
+        },
+        "commonMistakes": [
+          "Using strict < instead of <= when checking nums[left] <= nums[mid], which misclassifies a 2-element sorted half",
+          "Finding the pivot index first in a separate pass instead of deciding in-line — works, but is a slower two-pass version of the same idea",
+          "For Find Minimum, comparing nums[mid] to nums[left] instead of nums[right] — the comparison side matters for which half you eliminate"
+        ],
+        "walkthrough": "nums=[4,5,6,7,0,1,2], target=0: mid=3 (val 7) -> left half [4..7] sorted, 0 not in [4,7) -> search right half: left=4,right=6 -> mid=5 (val 1) -> left half [0,1] sorted, 0 not in [0,1) -> search left: left=4,right=4 -> mid=4 (val 0) -> found.",
+        "resources": [
+          {
+            "title": "Search in rotated sorted array - Leetcode 33 - Python",
+            "creator": "NeetCode",
+            "format": "Video",
+            "priority": "REQUIRED",
+            "url": "https://www.youtube.com/watch?v=U8XENwh8Oy8",
+            "instruction": "Watch the full video for the 'which half is sorted' decision — Find Minimum in Rotated Array uses the same decision with a simpler comparison, covered in the template above.",
+            "duration": "13 min",
+            "startTime": null,
+            "endTime": null,
+            "verifiedTitle": "Search in rotated sorted array - Leetcode 33 - Python",
+            "verifiedAt": "2026-09-13"
+          }
+        ]
+      },
+      {
+        "id": "binary-search-on-answer",
+        "name": "Binary Search on the Answer",
+        "recognition": [
+          "You're asked for a minimum/maximum feasible VALUE rather than searching an array directly",
+          "There's a monotonic feasibility predicate: if value X works, every value on one side of X also works",
+          "Brute force would try every candidate value in a loop and check feasibility each time"
+        ],
+        "intuition": "Binary search over the answer's value range, not over array indices. At each candidate mid, run a feasibility check (usually O(n)); if mid is feasible, try a smaller value (search left for the minimum feasible); if infeasible, you need a larger value (search right).",
+        "template": "def feasible(k):\n    hours = sum(-(-pile // k) for pile in piles)   # ceil division\n    return hours <= h\n\nleft, right = 1, max(piles)\nwhile left < right:\n    mid = (left + right) // 2\n    if feasible(mid):\n        right = mid\n    else:\n        left = mid + 1\nreturn left  # smallest feasible eating speed",
+        "complexity": {
+          "time": "O(n log m)",
+          "space": "O(1)"
+        },
+        "commonMistakes": [
+          "Stopping as soon as one feasible value is found instead of continuing to search for the smallest (or largest) feasible one",
+          "Getting the feasibility predicate's direction backwards — know whether 'feasible' means true for large values (search for minimum) or small values (search for maximum)",
+          "Starting the search range at 0 or an otherwise invalid lower bound instead of the smallest value that could possibly work (here, 1 banana/hour)"
+        ],
+        "walkthrough": "piles=[3,6,7,11], h=8: try k=4 -> hours=ceil(3/4)+ceil(6/4)+ceil(7/4)+ceil(11/4)=1+2+2+3=8<=8, feasible, try smaller. k=2 -> hours=2+3+4+6=15>8, infeasible. Binary search converges: smallest feasible k is 4.",
+        "resources": [
+          {
+            "title": "Koko Eating Bananas - Binary Search - Leetcode 875 - Python",
+            "creator": "NeetCode",
+            "format": "Video",
+            "priority": "REQUIRED",
+            "url": "https://www.youtube.com/watch?v=U2SozAs9RzA",
+            "instruction": "Watch the full video — this is the canonical 'binary search on the answer' teach; the feasibility-predicate idea transfers directly to capacity/rate/threshold problems generally.",
+            "duration": "15 min",
+            "startTime": null,
+            "endTime": null,
+            "verifiedTitle": "Koko Eating Bananas - Binary Search - Leetcode 875 - Python",
+            "verifiedAt": "2026-09-13"
+          }
+        ]
+      }
+    ]
+  },
+  19: {
+    "day": 19,
+    "patterns": [
+      {
+        "id": "linked-list-pointers",
+        "name": "Linked-List Pointer Manipulation",
+        "recognition": [
+          "You need to change next pointers in place (reverse, insert, delete)",
+          "You need to detect a cycle or find the middle without extra memory",
+          "Edge cases at the head of the list are awkward to handle without a placeholder node"
+        ],
+        "intuition": "Track prev/curr (and next) pointers explicitly and rewire one link at a time, always saving the forward reference before you overwrite it. A dummy node placed before the real head removes special-casing when the head itself might change. Fast/slow pointers move at different speeds through the same list: if they ever meet, there's a cycle; when slow reaches the true midpoint, fast has covered the whole list.",
+        "template": "# Reverse Linked List\nprev = None\ncurr = head\nwhile curr:\n    nxt = curr.next     # save BEFORE overwriting\n    curr.next = prev\n    prev = curr\n    curr = nxt\nreturn prev  # new head\n\n# Dummy node pattern (any insertion/deletion near the head)\ndummy = ListNode(0, head)\nprev = dummy\n# ... walk and rewire using prev/curr ...\nreturn dummy.next\n\n# Fast/slow pointers (cycle detection / find middle)\nslow = fast = head\nwhile fast and fast.next:\n    slow = slow.next\n    fast = fast.next.next\n    if slow == fast:\n        return True   # cycle found\nreturn False",
+        "complexity": {
+          "time": "O(n)",
+          "space": "O(1)"
+        },
+        "commonMistakes": [
+          "Overwriting curr.next before saving it to a temp variable, losing the rest of the list",
+          "Off-by-one on the fast/slow starting position, which can land 'the middle' on the wrong side for even-length lists",
+          "Forgetting to return dummy.next (not dummy itself) when a dummy node was used"
+        ],
+        "walkthrough": "Reverse [1->2->3]: prev=None, curr=1.\nStep 1: nxt=2, 1.next=None, prev=1, curr=2.\nStep 2: nxt=3, 2.next=1, prev=2, curr=3.\nStep 3: nxt=None, 3.next=2, prev=3, curr=None.\nLoop ends, return prev=3 -> list is now 3->2->1.",
+        "resources": [
+          {
+            "title": "Reverse Linked List - Iterative AND Recursive - Leetcode 206 - Python",
+            "creator": "NeetCode",
+            "format": "Video",
+            "priority": "REQUIRED",
+            "url": "https://www.youtube.com/watch?v=G0_I-ZF0S38",
+            "instruction": "Watch the full video for the core pointer-rewiring move — Merge Two Sorted Lists (dummy node) and Linked List Cycle (fast/slow) both reuse the exact same primitives covered in the template above.",
+            "duration": "11 min",
+            "startTime": null,
+            "endTime": null,
+            "verifiedTitle": "Reverse Linked List - Iterative AND Recursive - Leetcode 206 - Python",
+            "verifiedAt": "2026-09-13"
+          }
+        ]
+      }
+    ]
+  },
+  20: {
+    "day": 20,
+    "patterns": [
+      {
+        "id": "linked-list-multistep",
+        "name": "Linked-List Gap Technique & Multi-Step Pipelines",
+        "recognition": [
+          "You need 'the node N steps from the end' in one pass — plain fast/slow from the head isn't enough",
+          "The problem is really a pipeline of primitives you already know: split/find-middle, reverse a part, then merge back",
+          "You're combining two digit-lists node-by-node with a running carry, like manual long addition"
+        ],
+        "intuition": "For 'Nth from the end', advance one pointer N steps first to create a fixed gap, then move both pointers together — when the lead pointer hits the end, the trailing pointer sits exactly at the target. For multi-stage problems like Reorder List, decompose into primitives from Day 19: find the middle (fast/slow), reverse the second half, then merge two lists by alternating next pointers.",
+        "template": "# Gap technique: remove Nth node from end\ndummy = ListNode(0, head)\nfast = slow = dummy\nfor _ in range(n):\n    fast = fast.next\nwhile fast.next:\n    fast = fast.next\n    slow = slow.next\nslow.next = slow.next.next\nreturn dummy.next\n\n# Carry propagation (Add Two Numbers)\ncarry = 0\nwhile l1 or l2 or carry:\n    total = (l1.val if l1 else 0) + (l2.val if l2 else 0) + carry\n    carry, digit = divmod(total, 10)\n    # append digit to result list\n    l1 = l1.next if l1 else None\n    l2 = l2.next if l2 else None",
+        "complexity": {
+          "time": "O(n)",
+          "space": "O(1) excluding the output list"
+        },
+        "commonMistakes": [
+          "Forgetting the dummy node when the node to remove could be the head itself",
+          "Off-by-one on how many steps to advance the lead pointer before starting the paired walk",
+          "Dropping the final leftover carry after both input lists are exhausted — it needs one more output node"
+        ],
+        "walkthrough": "Remove the 2nd-from-end of [1,2,3,4,5]: dummy->1->2->3->4->5. Advance fast 2 steps -> fast at 3. Move both until fast.next is None -> slow ends at 3, fast ends at 5. slow.next = slow.next.next skips 4 -> result [1,2,3,5].",
+        "resources": [
+          {
+            "title": "Remove Nth Node from End of List - Oracle Interview Question - Leetcode 19",
+            "creator": "NeetCode",
+            "format": "Video",
+            "priority": "REQUIRED",
+            "url": "https://www.youtube.com/watch?v=XVuQxVej6y8",
+            "instruction": "Watch the full video for the gap technique — Reorder List and Add Two Numbers reuse Day 19's reverse/dummy primitives plus the carry-propagation idea in the template above, so no second video is required.",
+            "duration": "7 min",
+            "startTime": null,
+            "endTime": null,
+            "verifiedTitle": "Remove Nth Node from End of List - Oracle Interview Question - Leetcode 19",
+            "verifiedAt": "2026-09-13"
+          }
+        ]
+      }
+    ]
+  },
+  21: {
+    "day": 21,
+    "isReview": true,
+    "patterns": [
+      {
+        "id": "week3-review",
+        "name": "Week 3 Timed Review — Stack, Binary Search & Linked Lists",
+        "recognition": [
+          "No new pattern today — this consolidates Days 15-20",
+          "Goal: recognise which of the five patterns applies within 30 seconds of reading a problem"
+        ],
+        "commonMistakes": [
+          "Re-reading notes instead of attempting retrieval first — recognition speed only improves under retrieval pressure",
+          "Skipping the pointer-trace exercise because linked-list bugs 'seem obvious' — off-by-one pointer errors are exactly what this drill catches"
+        ],
+        "intuition": "Review is not re-watching videos. It is retrieval: answer the quiz from memory first, then check yourself, then run the timed mock and log every mistake honestly.",
+        "resources": [
+          {
+            "title": "Binary-Search Boundary Quiz",
+            "creator": "Mirror49 internal",
+            "format": "Internal exercise",
+            "priority": "REQUIRED",
+            "instruction": "Answer all 5 without looking at your notes, then check against the answer key.",
+            "duration": "10 min",
+            "verifiedAt": "2026-09-13",
+            "content": "1. In the [left, right) convention, what does `right` point to, and why does the loop condition use `<` instead of `<=`?\n2. You're finding the lower bound (first index >= target). At each step, why does `right = mid` (not `mid - 1`) when nums[mid] >= target?\n3. In a rotated sorted array, mid splits the array into two halves. What single comparison tells you which half is normally sorted?\n4. For Koko Eating Bananas, is the feasibility predicate 'hours(k) <= h' true for large k or small k? Which direction do you binary search?\n5. Find Minimum in Rotated Sorted Array compares nums[mid] to nums[right], not nums[left]. Why does the comparison side matter here?\n\nANSWER KEY\n1. `right` points one past the last valid index (len(nums)). The invariant 'answer is in [left,right)' becomes false the moment left==right, so `<` naturally terminates exactly when the interval is empty.\n2. nums[mid] itself might BE the lower bound — you can't exclude it, so the new search interval must still include mid, which `right = mid` preserves (a closed-at-mid, open-at-right convention).\n3. Compare nums[left] to nums[mid]: if nums[left] <= nums[mid], the left half is sorted; otherwise the right half is sorted.\n4. True for large k (eating faster always finishes in fewer or equal hours), so you binary search for the SMALLEST k where it's still true — moving right when infeasible, left when feasible.\n5. Comparing to nums[right] tells you whether mid is on the 'high' unrotated segment or the 'low' rotated segment relative to the array's true minimum; comparing to nums[left] doesn't reliably distinguish this when the array is barely rotated."
+          },
+          {
+            "title": "Linked-List Pointer-Trace Exercise",
+            "creator": "Mirror49 internal",
+            "format": "Internal exercise",
+            "priority": "REQUIRED",
+            "instruction": "On paper or in a text file, trace every pointer value at every step — do not run code first.",
+            "duration": "12 min",
+            "verifiedAt": "2026-09-13",
+            "content": "List: 1 -> 2 -> 3 -> 4 -> None. Trace Reorder List (target: 1 -> 4 -> 2 -> 3 -> None) step by step:\n1. Find the middle with fast/slow. Write down slow and fast's position after each iteration.\n2. Split the list into two halves at the middle. Write down both halves explicitly.\n3. Reverse the second half using the Day 19 template. Write down prev/curr/nxt at every step.\n4. Merge the two halves by alternating next pointers. Write down the merged list after each splice.\nSelf-check: does your final list match 1 -> 4 -> 2 -> 3 -> None exactly, including the final next being None?"
+          },
+          {
+            "title": "45-Minute Timed Mock — Stack, Search, Lists",
+            "creator": "Mirror49 internal",
+            "format": "Internal exercise",
+            "priority": "REQUIRED",
+            "instruction": "Set a 45-minute timer. Solve three unseen problems, one from each category below, without looking up solutions.",
+            "duration": "45 min",
+            "verifiedAt": "2026-09-13",
+            "action": "Attempt",
+            "content": "Pick ONE unseen problem from each bucket (use NeetCode's problem list, cover the title so you don't pattern-match from memory):\n1. A monotonic-stack problem you have not solved before (15 min budget).\n2. A binary-search problem — either exact/boundary search or search-on-the-answer (15 min budget).\n3. A linked-list problem requiring pointer rewiring (15 min budget).\nFor each: state brute force + complexity first, THEN the optimal pattern, THEN code it, THEN dry-run one test case out loud."
+          },
+          {
+            "title": "Error Log Template",
+            "creator": "Mirror49 internal",
+            "format": "Internal exercise",
+            "priority": "REQUIRED",
+            "instruction": "Fill this in immediately after the timed mock, for every problem you didn't solve cleanly on the first pass.",
+            "duration": "8 min",
+            "verifiedAt": "2026-09-13",
+            "action": "Complete",
+            "content": "For each missed or slow problem, record:\n- Problem name and pattern it actually needed\n- What you tried first, and why it was wrong or too slow\n- The exact moment you got stuck (which line, which edge case)\n- The fix, in one sentence\n- Which of the 5 Week 3 patterns this falls under\n- Revisit date (per the DSA Operating System: 1, 3, 7, 14 days out depending on result grade)"
+          },
+          {
+            "title": "Week 3 Scoring Rubric",
+            "creator": "Mirror49 internal",
+            "format": "Internal exercise",
+            "priority": "REQUIRED",
+            "instruction": "Score the timed mock honestly before moving to Week 4.",
+            "duration": "5 min",
+            "verifiedAt": "2026-09-13",
+            "action": "Complete",
+            "content": "STRONG (ready for Week 4): all 3 problems solved within budget, correct complexity stated unprompted, pattern recognised in under 30 seconds each.\nPARTIAL: 2 of 3 solved within budget, or needed a hint to identify the pattern on one problem.\nWEAK: 0-1 solved within budget, or the pattern wasn't recognised without seeing the category label.\nIf WEAK on binary search specifically: re-watch the Day 17 video and redo the boundary quiz before attempting new binary-search problems.\nIf WEAK on linked lists specifically: redo the pointer-trace exercise on a different list by hand before coding anything."
+          }
+        ]
+      }
+    ]
+  },
+  22: {
+    "day": 22,
+    "patterns": [
+      {
+        "id": "tree-dfs-recursive",
+        "name": "Recursive Tree DFS (base case + postorder combine)",
+        "recognition": [
+          "Problem asks about depth, height, or \"is X true for the whole tree\"",
+          "You need to compare or transform two trees node-by-node",
+          "The answer at a node depends only on answers already computed from its children"
+        ],
+        "intuition": "Trees are recursive by definition: a tree is a node plus two smaller trees. Solve the smallest case (empty node) first, then trust the recursive call to correctly solve each child subtree, and combine their results at the current node — you never need to think more than one level deep at a time.",
+        "template": "def solve(node):\n    if node is None:\n        return BASE_CASE          # e.g. 0 for depth, True for \"is same\"\n    left = solve(node.left)\n    right = solve(node.right)\n    return COMBINE(node, left, right)   # e.g. 1 + max(left, right)",
+        "complexity": {
+          "time": "O(n)",
+          "space": "O(h) recursion stack, h = tree height (O(log n) balanced, O(n) worst case)"
+        },
+        "commonMistakes": [
+          "Forgetting the null/None base case, causing an AttributeError on node.left",
+          "Swapping the roles of left/right when the problem is asymmetric (Invert Tree needs the swap; Same Tree needs symmetric comparison)",
+          "Doing extra work at every node (re-walking subtrees) instead of trusting the recursive result"
+        ],
+        "walkthrough": "Maximum Depth on [3,9,20,null,null,15,7]: solve(9)=1 (leaf). solve(20)=1+max(solve(15),solve(7))=1+max(1,1)=2. solve(3)=1+max(solve(9),solve(20))=1+max(1,2)=3.",
+        "resources": [
+          {
+            "title": "Invert Binary Tree - Depth First Search - Leetcode 226",
+            "creator": "NeetCode",
+            "format": "Video",
+            "priority": "REQUIRED",
+            "url": "https://www.youtube.com/watch?v=OnSn2XEQ4MY",
+            "instruction": "Watch the full video — it teaches the general recursive-tree-DFS pattern (base case + combine), not just one problem.",
+            "duration": "4 min",
+            "startTime": null,
+            "endTime": null,
+            "verifiedTitle": "Invert Binary Tree - Depth First Search - Leetcode 226",
+            "verifiedAt": "2026-09-13"
+          }
+        ]
+      }
+    ]
+  },
+  23: {
+    "day": 23,
+    "patterns": [
+      {
+        "id": "tree-bottom-up-dp",
+        "name": "Bottom-Up Tree DP (state vs. answer)",
+        "recognition": [
+          "The final answer might not be at the root (e.g. the diameter can be between any two leaves)",
+          "You need TWO different things from a subtree: a value to return to the parent, AND a value to update a running best answer",
+          "Comparing two trees for structural equality or containment"
+        ],
+        "intuition": "Separate \"what does the parent need from me\" (the returned state, e.g. height) from \"what is the best answer seen so far\" (a variable updated as a side effect during the recursion, via nonlocal or self). Conflating the two is the most common bug on this pattern.",
+        "template": "best = 0\ndef dfs(node):\n    nonlocal best\n    if node is None:\n        return 0                       # state returned to parent\n    left = dfs(node.left)\n    right = dfs(node.right)\n    best = max(best, left + right)     # update the answer as a side effect\n    return 1 + max(left, right)        # state returned to parent",
+        "complexity": {
+          "time": "O(n)",
+          "space": "O(h)"
+        },
+        "commonMistakes": [
+          "Returning the answer (e.g. diameter) instead of the state (height) from the recursive call, breaking the parent's calculation",
+          "Forgetting nonlocal/self. so the \"best\" update inside the recursion doesn't persist outside it",
+          "For Subtree of Another Tree: confusing \"is s a subtree of t\" (try matching at every node) with \"is s equal to t\" (matching from the root only)"
+        ],
+        "walkthrough": "Diameter on path 1-2-3-4 (all left children): dfs(4)=1,best=0. dfs(3): left=1,right=0,best=max(0,1)=1,returns 2. dfs(2): left=2,right=0,best=max(1,2)=2,returns 3. dfs(1): left=3,right=0,best=max(2,3)=3. Diameter = 3 edges.",
+        "resources": [
+          {
+            "title": "Diameter of a Binary Tree - Leetcode 543 - Python",
+            "creator": "NeetCode",
+            "format": "Video",
+            "priority": "REQUIRED",
+            "url": "https://www.youtube.com/watch?v=bkxqA8Rfv04",
+            "instruction": "Watch the full video.",
+            "duration": "16 min",
+            "startTime": null,
+            "endTime": null,
+            "verifiedTitle": "Diameter of a Binary Tree - Leetcode 543 - Python",
+            "verifiedAt": "2026-09-13"
+          }
+        ]
+      }
+    ]
+  },
+  24: {
+    "day": 24,
+    "patterns": [
+      {
+        "id": "tree-bfs-level-order",
+        "name": "Tree BFS (level-by-level queue processing)",
+        "recognition": [
+          "Problem talks about \"levels\", \"depth by depth\", or \"the last node you see at each depth\"",
+          "You need the leftmost/rightmost node at each depth, or must process depth k before depth k+1",
+          "Zigzag / alternating direction per level"
+        ],
+        "intuition": "Use a queue, but snapshot len(queue) BEFORE the inner loop — that snapshot is exactly how many nodes are at this level right now. Looping that many times (not while queue is non-empty) is what keeps levels separate.",
+        "template": "from collections import deque\ndef levelOrder(root):\n    if not root: return []\n    result, q = [], deque([root])\n    while q:\n        level_size = len(q)          # freeze the level boundary\n        level = []\n        for _ in range(level_size):\n            node = q.popleft()\n            level.append(node.val)\n            if node.left: q.append(node.left)\n            if node.right: q.append(node.right)\n        result.append(level)\n    return result",
+        "complexity": {
+          "time": "O(n)",
+          "space": "O(w) — w = maximum width of the tree, up to O(n)"
+        },
+        "commonMistakes": [
+          "Reading len(q) inside the for-loop instead of freezing it before — this silently merges levels",
+          "For Right Side View: taking the FIRST node processed per level instead of the LAST",
+          "For Zigzag: reversing the wrong levels, or reversing the queue instead of just the output list"
+        ],
+        "walkthrough": "[3,9,20,null,null,15,7]: level 0 -> [3], queue becomes [9,20]. level 1 -> level_size=2, process 9,20 -> [9,20], queue becomes [15,7]. level 2 -> [15,7].",
+        "resources": [
+          {
+            "title": "Binary Tree Level Order Traversal - BFS - Leetcode 102",
+            "creator": "NeetCode",
+            "format": "Video",
+            "priority": "REQUIRED",
+            "url": "https://www.youtube.com/watch?v=6ZnyEApgFYg",
+            "instruction": "Watch the full video.",
+            "duration": "10 min",
+            "startTime": null,
+            "endTime": null,
+            "verifiedTitle": "Binary Tree Level Order Traversal - BFS - Leetcode 102",
+            "verifiedAt": "2026-09-13"
+          }
+        ]
+      }
+    ]
+  },
+  25: {
+    "day": 25,
+    "patterns": [
+      {
+        "id": "bst-invariant",
+        "name": "BST Ordering Invariant (range validation + inorder)",
+        "recognition": [
+          "Problem mentions \"binary search tree\" explicitly, or asks for the kth smallest/sorted order",
+          "You need to exploit sortedness instead of comparing every pair of nodes",
+          "Finding an ancestor/path where \"go left if smaller, go right if larger\" applies"
+        ],
+        "intuition": "A BST's real invariant is global, not local: every node in a left subtree must be less than ALL of its ancestors up the chain, not just its direct parent. Carry a (low, high) valid range down the recursion, tightening it at every step. Separately: an inorder traversal of a valid BST always visits values in strictly increasing order — that fact powers Kth Smallest directly.",
+        "template": "def isValidBST(node, low=float('-inf'), high=float('inf')):\n    if node is None:\n        return True\n    if not (low < node.val < high):\n        return False\n    return (isValidBST(node.left, low, node.val) and\n            isValidBST(node.right, node.val, high))",
+        "complexity": {
+          "time": "O(n)",
+          "space": "O(h)"
+        },
+        "commonMistakes": [
+          "Only checking node.val against its direct children — this misses violations from grandparents/further ancestors",
+          "Using <= instead of < when the problem guarantees unique values (off-by-one on the boundary)",
+          "For LCA of BST: doing a generic tree LCA search instead of using the ordering to go left/right directly in O(h)"
+        ],
+        "walkthrough": "Root 5 with left child 6: isValidBST(5) calls isValidBST(6, low=-inf, high=5). 6 is not < 5, so it fails immediately — correctly invalid, even though a check against 6's own (nonexistent) children alone would have looked fine.",
+        "resources": [
+          {
+            "title": "Validate Binary Search Tree - Depth First Search - Leetcode 98",
+            "creator": "NeetCode",
+            "format": "Video",
+            "priority": "REQUIRED",
+            "url": "https://www.youtube.com/watch?v=s6ATEkipzow",
+            "instruction": "Watch the full video.",
+            "duration": "10 min",
+            "startTime": null,
+            "endTime": null,
+            "verifiedTitle": "Validate Binary Search Tree - Depth First Search - Leetcode 98",
+            "verifiedAt": "2026-09-13"
+          }
+        ]
+      }
+    ]
+  },
+  26: {
+    "day": 26,
+    "patterns": [
+      {
+        "id": "tree-advanced-state",
+        "name": "Advanced Recursive Tree State (LCA + Max Path Sum)",
+        "recognition": [
+          "Need to find an ancestor shared by two specific nodes",
+          "Need a \"best path through this node\" that can bend (enter from one child, exit through another), not just a straight downward path",
+          "The globally best answer may occur inside a subtree without including the whole tree"
+        ],
+        "intuition": "For LCA: recurse into both children; if a node's own value matches p or q, or if p and q are found in DIFFERENT children's subtrees, that node IS the LCA — the first point where the two search paths diverge. For Max Path Sum: at every node compute the best path that BENDS through it (left-gain + node + right-gain) for the global answer, but return only the best STRAIGHT-DOWN path (node + max one side) to the parent, since a parent can only extend a single side.",
+        "template": "# LCA\ndef lca(node, p, q):\n    if node is None or node is p or node is q:\n        return node\n    left = lca(node.left, p, q)\n    right = lca(node.right, p, q)\n    if left and right: return node\n    return left or right\n\n# Max Path Sum\nbest = float('-inf')\ndef maxGain(node):\n    nonlocal best\n    if node is None: return 0\n    left_gain = max(maxGain(node.left), 0)   # negative-path pruning\n    right_gain = max(maxGain(node.right), 0)\n    best = max(best, node.val + left_gain + right_gain)\n    return node.val + max(left_gain, right_gain)",
+        "complexity": {
+          "time": "O(n)",
+          "space": "O(h)"
+        },
+        "commonMistakes": [
+          "Max Path Sum: forgetting to clamp negative subtree gains to 0 — a very negative subtree should be excluded, not dragged in",
+          "Max Path Sum: returning left_gain + right_gain to the parent instead of max(left_gain, right_gain) — a path can't fork twice",
+          "LCA: assuming BST ordering and going left/right by value — plain binary trees have no such ordering, you must search both sides"
+        ],
+        "walkthrough": "Max Path Sum on a single node with value -3, no children: left_gain=0, right_gain=0, best=max(-inf,-3)=-3, returns -3 — correctly reports -3 as the best path (a lone negative node), never silently returning 0.",
+        "resources": [
+          {
+            "title": "LOWEST COMMON ANCESTOR OF A BINARY TREE I | PYTHON | LEETCODE 236",
+            "creator": "Cracking FAANG",
+            "format": "Video",
+            "priority": "REQUIRED",
+            "url": "https://www.youtube.com/watch?v=WO1tfq2sbsI",
+            "instruction": "Watch the full video — covers the general (non-BST) LCA recursion this pattern needs.",
+            "duration": "13 min",
+            "startTime": null,
+            "endTime": null,
+            "verifiedTitle": "LOWEST COMMON ANCESTOR OF A BINARY TREE I | PYTHON | LEETCODE 236",
+            "verifiedAt": "2026-09-13"
+          }
+        ]
+      },
+      {
+        "id": "tree-serialization",
+        "name": "Tree Serialization / Deserialization",
+        "recognition": [
+          "Need to convert a tree to a string (or array) and reconstruct the exact same tree from it",
+          "Plain inorder traversal alone is ambiguous — you need a traversal that also records structure (nulls)"
+        ],
+        "intuition": "Preorder traversal (node, then left, then right) naturally encodes structure IF you explicitly write down null children as a sentinel (e.g. \"N\") instead of skipping them. Deserializing then just replays the same preorder order, consuming tokens one at a time and recursing — the sentinel tells you exactly when to stop each branch.",
+        "template": "def serialize(root):\n    vals = []\n    def dfs(node):\n        if node is None:\n            vals.append('N'); return\n        vals.append(str(node.val))\n        dfs(node.left); dfs(node.right)\n    dfs(root)\n    return ','.join(vals)\n\ndef deserialize(data):\n    vals = iter(data.split(','))\n    def dfs():\n        val = next(vals)\n        if val == 'N': return None\n        node = TreeNode(int(val))\n        node.left = dfs()\n        node.right = dfs()\n        return node\n    return dfs()",
+        "complexity": {
+          "time": "O(n)",
+          "space": "O(n)"
+        },
+        "commonMistakes": [
+          "Skipping null children entirely instead of writing a sentinel — makes deserialization ambiguous",
+          "Using a delimiter that can also appear inside a node value (e.g. plain space with multi-digit/negative values) without also delimiting between values",
+          "Deserializing with a manual index counter that gets out of sync instead of a shared iterator/pointer"
+        ],
+        "walkthrough": "Tree [1,2,null,null,3]: preorder = 1,2,N,N,3,N,N. Deserializing reads 1 (root), recurses left -> reads 2, recurses left -> reads N (None), recurses right -> reads N (None); back up, root's right -> reads 3, its children both N.",
+        "resources": [
+          {
+            "title": "Serialize and Deserialize Binary Tree - Preorder Traversal - Leetcode 297 - Python",
+            "creator": "NeetCode",
+            "format": "Video",
+            "priority": "REQUIRED",
+            "url": "https://www.youtube.com/watch?v=u4JAi2JJhI8",
+            "instruction": "Watch the full video.",
+            "duration": "14 min",
+            "startTime": null,
+            "endTime": null,
+            "verifiedTitle": "Serialize and Deserialize Binary Tree - Preorder Traversal - Leetcode 297 - Python",
+            "verifiedAt": "2026-09-13"
+          }
+        ]
+      }
+    ]
+  },
+  27: {
+    "day": 27,
+    "patterns": [
+      {
+        "id": "heap-top-k",
+        "name": "Heap / Top-K and Two-Heaps",
+        "recognition": [
+          "Need the kth largest/smallest element, repeatedly, as data streams in",
+          "Need a running median or running \"middle\" statistic of a growing dataset",
+          "\"Top K\" where K is much smaller than N — sorting everything each time is wasteful"
+        ],
+        "intuition": "To track the k LARGEST elements seen so far, use a MIN-heap of size k (the smallest of your top-k sits on top, ready to be evicted the moment something bigger arrives) — this feels backwards the first time but is the standard trick. For a running median, split the data into two heaps: a max-heap for the smaller half and a min-heap for the larger half, rebalanced so their sizes never differ by more than one; the median is then O(1) to read from the heap tops.",
+        "template": "import heapq\n# Kth largest so far, streaming:\nclass KthLargest:\n    def __init__(self, k, nums):\n        self.k = k\n        self.heap = nums\n        heapq.heapify(self.heap)\n        while len(self.heap) > k:\n            heapq.heappop(self.heap)\n    def add(self, val):\n        heapq.heappush(self.heap, val)\n        if len(self.heap) > self.k:\n            heapq.heappop(self.heap)\n        return self.heap[0]\n\n# Running median, two heaps:\nsmall, large = [], []   # small: max-heap (store negated), large: min-heap\ndef addNum(num):\n    heapq.heappush(small, -num)\n    heapq.heappush(large, -heapq.heappop(small))\n    if len(large) > len(small):\n        heapq.heappush(small, -heapq.heappop(large))",
+        "complexity": {
+          "time": "O(log k) per insert for top-k; O(log n) per insert for two-heaps",
+          "space": "O(k) or O(n)"
+        },
+        "commonMistakes": [
+          "Using a MAX-heap for top-k (you'd have to pop and re-push almost everything — defeats the purpose)",
+          "Python's heapq is min-heap only — forgetting to negate values for a \"max-heap\" and comparing/popping the wrong sign",
+          "Two-heaps: forgetting the rebalancing step, so the halves drift apart and the median read becomes wrong"
+        ],
+        "walkthrough": "Kth largest (k=2) stream 4,5,8,2: heap=[4,5] (kept both, size<=k). Add 8: push then pop smallest -> heap=[5,8], top=5 (2nd largest so far). Add 2: push then pop removes 2 right back out, top stays 5.",
+        "resources": [
+          {
+            "title": "Find Median from Data Stream - Heap & Priority Queue - Leetcode 295",
+            "creator": "NeetCode",
+            "format": "Video",
+            "priority": "REQUIRED",
+            "url": "https://www.youtube.com/watch?v=itmhHWaHupI",
+            "instruction": "Watch the full video — this is today's actual Find Median from Data Stream problem, taught as the two-heaps pattern.",
+            "duration": "24 min",
+            "startTime": null,
+            "endTime": null,
+            "verifiedTitle": "Find Median from Data Stream - Heap & Priority Queue - Leetcode 295",
+            "verifiedAt": "2026-09-13"
+          }
+        ]
+      },
+      {
+        "id": "trie",
+        "name": "Trie (Prefix Tree)",
+        "recognition": [
+          "Repeated prefix lookups: \"does any word start with this prefix\", autocomplete, spell-check",
+          "Need to insert/search whole words AND prefixes efficiently, not just exact matches"
+        ],
+        "intuition": "Each trie node is a small dictionary/array of children keyed by the next character, plus a boolean flag marking \"a complete word ends here\". Insert and search both just walk character-by-character from the root, creating nodes on insert or bailing out early on search if a character's edge doesn't exist.",
+        "template": "class TrieNode:\n    def __init__(self):\n        self.children = {}\n        self.is_end = False\n\nclass Trie:\n    def __init__(self):\n        self.root = TrieNode()\n    def insert(self, word):\n        node = self.root\n        for ch in word:\n            node = node.children.setdefault(ch, TrieNode())\n        node.is_end = True\n    def search(self, word):\n        node = self._walk(word)\n        return node is not None and node.is_end\n    def startsWith(self, prefix):\n        return self._walk(prefix) is not None\n    def _walk(self, s):\n        node = self.root\n        for ch in s:\n            if ch not in node.children: return None\n            node = node.children[ch]\n        return node",
+        "complexity": {
+          "time": "O(L) per insert/search, L = word/prefix length",
+          "space": "O(total characters inserted)"
+        },
+        "commonMistakes": [
+          "Confusing search() (must end exactly on a complete-word node) with startsWith() (just needs the path to exist)",
+          "Using a fixed-size array of 26 children when the alphabet isn't guaranteed lowercase a-z — a dict is safer unless constraints say otherwise",
+          "Forgetting to mark is_end = True at the end of insert, making every inserted word invisible to search()"
+        ],
+        "walkthrough": "insert('cat'): root->c->a->t (is_end=True). search('cat') walks the same path, finds is_end=True -> True. search('ca') walks to the 'a' node but is_end is False there -> False. startsWith('ca') only needs the path to exist -> True.",
+        "resources": [
+          {
+            "title": "Implement Trie (Prefix Tree) - Leetcode 208",
+            "creator": "NeetCode",
+            "format": "Video",
+            "priority": "REQUIRED",
+            "url": "https://www.youtube.com/watch?v=oobqoCJlHA0",
+            "instruction": "Watch the full video.",
+            "duration": "19 min",
+            "startTime": null,
+            "endTime": null,
+            "verifiedTitle": "Implement Trie (Prefix Tree) - Leetcode 208",
+            "verifiedAt": "2026-09-13"
+          }
+        ]
+      }
+    ]
+  },
+  28: {
+    "day": 28,
+    "patterns": [
+      {
+        "id": "week4-review",
+        "name": "Week 4 Tree/Heap/Trie Recognition Review",
+        "recognition": [
+          "You can code a tree DFS but freeze when asked whether the answer is computed bottom-up or returned to the parent",
+          "You default to sorting when a heap would give better complexity, or vice versa",
+          "You're unsure whether a problem needs a trie versus a plain hash map"
+        ],
+        "commonMistakes": [
+          "Treating 'returns information to the parent' and 'computes the final answer' as the same recursive role — Day 23/26 exist because they aren't",
+          "Not timing the mock — untimed practice hides the exact gap this review day is meant to surface"
+        ],
+        "intuition": "No new pattern today — consolidate Week 4's tree, heap and trie recognition signals before the architecture mock.",
+        "resources": [
+          {
+            "title": "Tree-Pattern Decision Chart",
+            "creator": "Mirror49 internal",
+            "format": "Internal exercise",
+            "priority": "REQUIRED",
+            "instruction": "Read, then self-test: given a problem statement, name the pattern before looking at the answer.",
+            "duration": "10 min",
+            "verifiedAt": "2026-09-13",
+            "content": "DECISION CHART\n\nQ: Does the answer only need info from a node's own subtree, combined bottom-up? -> Recursive tree DFS (base case + combine).\nQ: Does the best answer possibly NOT pass through the root, and differ from what you return to the parent? -> Bottom-up tree DP (state vs. answer split).\nQ: Do you need level-by-level output, or the last/first node per level? -> Tree BFS with frozen level_size.\nQ: Does the tree have the BST ordering property, usable to search in O(h) instead of O(n)? -> BST invariant (range validation / inorder).\nQ: Do you need an ancestor shared by two arbitrary nodes, or a path that can bend through a node? -> Advanced recursive state (LCA / Max Path Sum).\nQ: Do you need to reconstruct the exact tree from a string? -> Serialization (preorder + null sentinel).\nQ: Do you need the kth largest/smallest repeatedly, or a running median? -> Heap / two-heaps.\nQ: Do you need repeated prefix lookups? -> Trie.\n\nSELF-TEST (answer before checking):\n1. \"Return the sum of all left leaves.\"\n2. \"Given two arbitrary nodes, find their closest common ancestor.\"\n3. \"Print the tree so a level-order queue could rebuild it exactly.\"\n4. \"Support add(num) and findMedian() calls interleaved.\"\nANSWERS: 1. Recursive tree DFS (track an \"is this a left leaf\" flag downward, sum upward). 2. Advanced recursive state (LCA). 3. Serialization (level-order + null markers is a valid variant of the same idea). 4. Two-heaps."
+          },
+          {
+            "title": "Heap vs. Sort Quiz",
+            "creator": "Mirror49 internal",
+            "format": "Internal exercise",
+            "priority": "REQUIRED",
+            "instruction": "Answer honestly, then check.",
+            "duration": "8 min",
+            "verifiedAt": "2026-09-13",
+            "content": "1. You need the top 5 of 10 million streaming numbers, one at a time. Full sort at the end, or a size-5 min-heap? Why?\n2. You need the single largest element of a static, already-in-memory array once. Heap, or just max()/sort? Why?\n3. Why is a size-k MIN-heap the right structure for \"k largest\", not a size-k max-heap?\n\nANSWERS:\n1. Size-5 min-heap — sorting 10M numbers at the end is O(n log n) and needs everything in memory; the heap is O(n log k) with O(k) memory and works incrementally as data streams.\n2. Just max() — O(n) single pass beats building any heap structure when you only need it once and don't need repeated top-k queries.\n3. A min-heap of size k keeps the SMALLEST of your current top-k on top, so one comparison against a new value tells you whether it belongs in the top-k; a max-heap of size k would put the LARGEST on top, useless for deciding whether a new, possibly-smaller value should evict the current minimum."
+          },
+          {
+            "title": "Trie Recognition Exercise",
+            "creator": "Mirror49 internal",
+            "format": "Internal exercise",
+            "priority": "REQUIRED",
+            "instruction": "For each scenario, decide trie vs. hash set/map, then check.",
+            "duration": "8 min",
+            "verifiedAt": "2026-09-13",
+            "content": "1. Autocomplete: given a prefix typed so far, list all words that start with it.\n2. Check if an exact word exists in a dictionary of 100k words, no prefix queries needed.\n3. Word search on a grid where you backtrack through a fixed dictionary, pruning branches that can't possibly form any dictionary word.\n\nANSWERS:\n1. Trie — a hash set can't efficiently enumerate \"all words starting with X\" without scanning every entry; a trie walks directly to the prefix's node and DFS-lists everything below it.\n2. Hash set — no prefix requirement means a trie's extra structure buys nothing; O(1) average hash lookup is simpler and just as fast.\n3. Trie — this is the classic Word Search II pattern: build a trie of the dictionary once, then during the grid backtrack bail out of a branch the instant no trie edge matches, instead of checking each dictionary word independently."
+          },
+          {
+            "title": "Timed Mock — Trees, Heaps and Tries",
+            "creator": "Mirror49 internal",
+            "format": "Internal exercise",
+            "priority": "REQUIRED",
+            "action": "Attempt",
+            "instruction": "45 minutes, no notes. Solve the three timed problems for today, then self-score.",
+            "duration": "45 min",
+            "verifiedAt": "2026-09-13",
+            "content": "TIMED MOCK (45 minutes total, roughly 15 min each):\n1. Given a binary tree, return the sum of values at the deepest level only.\n2. Given a binary tree, determine if it is height-balanced at every node (not just the root) in a single O(n) pass — no repeated height recomputation.\n3. Design a data structure supporting insert(word) and a wildcard search(word) where '.' matches any single character (extends the trie pattern — think about when you must branch into ALL children instead of one).\n\nSCORING: solved all 3 within time, optimal complexity = Strong. Solved 2/3 or needed extra time = Partial. Solved 0-1 = Weak, revisit Days 22-27 primers before Day 29."
+          },
+          {
+            "title": "Week 4 Scoring Rubric",
+            "creator": "Mirror49 internal",
+            "format": "Internal exercise",
+            "priority": "REQUIRED",
+            "action": "Complete",
+            "instruction": "Score yourself against this rubric after the timed mock.",
+            "duration": "5 min",
+            "verifiedAt": "2026-09-13",
+            "content": "STRONG: named the correct pattern within 30 seconds of reading each problem, implemented without looking up syntax, stated correct time/space complexity unprompted.\nPARTIAL: got the right pattern after a hint or after trying a wrong approach first; complexity stated only when asked.\nWEAK: needed the pattern revealed; couldn't implement the base template from memory.\n\nIf Partial or Weak on 2+ of the 6 Week 4 patterns, re-read those specific primers (not the whole week) before Day 29."
+          }
+        ]
+      }
+    ]
+  },
+  29: {
+    "day": 29,
+    "patterns": [
+      {
+        "id": "graph-bfs-dfs-traversal",
+        "name": "Graph Representation, BFS and DFS",
+        "recognition": [
+          "You need to determine whether two nodes are connected",
+          "You need to count separate groups/components in a graph or grid",
+          "You need to explore every reachable node exactly once"
+        ],
+        "intuition": "Represent the graph as an adjacency list (or treat grid cells as implicit nodes with neighbour offsets). Pick BFS when you need shortest number of hops or level-by-level processing; pick DFS when you just need reachability/connectivity and recursion depth is manageable. A visited set is what keeps traversal O(V+E) instead of revisiting nodes forever.",
+        "template": "# BFS\nfrom collections import deque\ndef bfs(start, adj):\n    visited = {start}\n    q = deque([start])\n    while q:\n        node = q.popleft()\n        for nb in adj[node]:\n            if nb not in visited:\n                visited.add(nb)   # mark visited on enqueue, not on dequeue\n                q.append(nb)\n    return visited\n\n# DFS (iterative, avoids recursion-limit issues on large inputs)\ndef dfs(start, adj):\n    visited = {start}\n    stack = [start]\n    while stack:\n        node = stack.pop()\n        for nb in adj[node]:\n            if nb not in visited:\n                visited.add(nb)\n                stack.append(nb)\n    return visited\n\n# Counting components: run BFS/DFS from every unvisited node\ndef count_components(n, adj):\n    seen = set()\n    count = 0\n    for node in range(n):\n        if node not in seen:\n            seen |= bfs(node, adj)\n            count += 1\n    return count",
+        "complexity": {
+          "time": "O(V+E)",
+          "space": "O(V)"
+        },
+        "commonMistakes": [
+          "Marking a node visited only when dequeued/popped instead of when enqueued/pushed, causing the same node to be queued multiple times",
+          "Using recursion for DFS on inputs large enough to blow the recursion stack, with no iterative fallback",
+          "Forgetting that counting components means running the traversal from EVERY unvisited node, not just once from a single start"
+        ],
+        "walkthrough": "Flood Fill on a 3x3 grid starting at (1,1) with target color 1 -> new color 2: visit (1,1), push its 4 neighbours that also equal 1, flip each to 2 as visited, continue until the queue/stack is empty. Cells that were never 1 to begin with are never touched.",
+        "resources": [
+          {
+            "title": "Breadth First Search Algorithm | Shortest Path | Graph Theory",
+            "creator": "WilliamFiset",
+            "format": "Video",
+            "priority": "REQUIRED",
+            "url": "https://www.youtube.com/watch?v=oDqjPvD54Ss",
+            "instruction": "Watch the full video — it teaches BFS as a general graph-traversal pattern (queue, visited set, level expansion), which is the reusable technique behind all three of today's problems.",
+            "duration": "7 min",
+            "startTime": null,
+            "endTime": null,
+            "verifiedTitle": "Breadth First Search Algorithm | Shortest Path | Graph Theory",
+            "verifiedAt": "2026-09-13"
+          }
+        ]
+      }
+    ]
+  },
+  30: {
+    "day": 30,
+    "patterns": [
+      {
+        "id": "grid-multisource-traversal",
+        "name": "Grid as an Implicit Graph",
+        "recognition": [
+          "The input is a 2D grid instead of an explicit adjacency list",
+          "You need to explore a connected blob of matching cells (e.g. all '1's touching each other)",
+          "You need to distinguish cells reachable from the interior versus cells that touch the grid's border"
+        ],
+        "intuition": "Treat each grid cell as a node with up to 4 implicit neighbours via a direction-offset array [(0,1),(0,-1),(1,0),(-1,0)]. Either mark visited cells in a separate set, or mutate the grid in place (flip '1' to '0' or a sentinel) to avoid revisiting — mutation is simpler when you're allowed to destroy the input, a visited set is required when you're not.",
+        "template": "DIRS = [(0,1),(0,-1),(1,0),(-1,0)]\ndef flood(grid, r, c, target, visited):\n    rows, cols = len(grid), len(grid[0])\n    stack = [(r, c)]\n    visited.add((r, c))\n    size = 0\n    while stack:\n        cr, cc = stack.pop()\n        size += 1\n        for dr, dc in DIRS:\n            nr, nc = cr + dr, cc + dc\n            if 0 <= nr < rows and 0 <= nc < cols \\\n               and (nr, nc) not in visited and grid[nr][nc] == target:\n                visited.add((nr, nc))\n                stack.append((nr, nc))\n    return size",
+        "complexity": {
+          "time": "O(rows * cols)",
+          "space": "O(rows * cols)"
+        },
+        "commonMistakes": [
+          "Forgetting boundary checks before indexing into the grid, causing an index-out-of-range",
+          "Checking the visited/target condition AFTER recursing into a cell instead of before adding it to the stack/queue, causing the same cell to be pushed many times",
+          "For Surrounded Regions specifically: flood-filling from an arbitrary interior cell instead of starting from every border cell — only border-connected 'O's are safe from capture"
+        ],
+        "walkthrough": "Max Area of Island on grid [[1,1,0],[0,1,0],[0,0,1]]: flood from (0,0) covers (0,0),(0,1),(1,1) -> area 3; the lone (2,2) is a separate island of area 1. Answer is max(3,1)=3.",
+        "resources": [
+          {
+            "title": "NUMBER OF ISLANDS - Leetcode 200 - Python",
+            "creator": "NeetCode",
+            "format": "Video",
+            "priority": "REQUIRED",
+            "url": "https://www.youtube.com/watch?v=pV2kpPD66nE",
+            "instruction": "Watch the full video. Focus on how the grid is treated as an implicit graph and how visited cells are tracked — that reusable technique, not the exact island-counting code, is today's pattern.",
+            "duration": "12 min",
+            "startTime": null,
+            "endTime": null,
+            "verifiedTitle": "NUMBER OF ISLANDS - Leetcode 200 - Python",
+            "verifiedAt": "2026-09-13"
+          }
+        ]
+      }
+    ]
+  },
+  31: {
+    "day": 31,
+    "patterns": [
+      {
+        "id": "graph-cloning",
+        "name": "Graph Cloning (Map of Originals to Copies)",
+        "recognition": [
+          "You need to produce a deep copy of a graph/linked structure",
+          "Nodes can form cycles, so naive recursive copying could infinite-loop"
+        ],
+        "intuition": "Keep a hash map from original node to its clone. Before creating a new clone for a node, check the map — if it's already there, reuse it instead of recursing again. Registering a node in the map BEFORE recursing into its neighbours is what breaks cycles and guarantees each node is cloned exactly once.",
+        "template": "def clone(node, visited={}):\n    if node in visited:\n        return visited[node]\n    copy = Node(node.val)\n    visited[node] = copy          # register BEFORE recursing into neighbours\n    for nb in node.neighbors:\n        copy.neighbors.append(clone(nb, visited))\n    return copy",
+        "complexity": {
+          "time": "O(V+E)",
+          "space": "O(V)"
+        },
+        "commonMistakes": [
+          "Cloning a node's neighbours before registering the node itself in the map, causing infinite recursion on any cycle",
+          "Comparing nodes by value instead of by identity/reference when checking whether a node was already cloned",
+          "Rebuilding the neighbour list with references to ORIGINAL nodes instead of their clones"
+        ],
+        "walkthrough": "3-node cycle 1-2-3-1: clone(1) registers copy1, recurses into 2; clone(2) registers copy2, recurses into 3; clone(3) registers copy3, recurses into 1 -> already in map, returns copy1 directly instead of re-cloning. No infinite loop.",
+        "resources": [
+          {
+            "title": "Clone Graph - Depth First Search - Leetcode 133",
+            "creator": "NeetCode",
+            "format": "Video",
+            "priority": "REQUIRED",
+            "url": "https://www.youtube.com/watch?v=mQeF6bN8hMk",
+            "instruction": "Watch the full video, focused on the map-of-originals-to-copies technique and why registering a node before recursing avoids infinite loops on cycles.",
+            "duration": "12 min",
+            "startTime": null,
+            "endTime": null,
+            "verifiedTitle": "Clone Graph - Depth First Search - Leetcode 133",
+            "verifiedAt": "2026-09-13"
+          }
+        ]
+      },
+      {
+        "id": "multisource-reverse-traversal",
+        "name": "Multi-Source / Reverse Traversal",
+        "recognition": [
+          "Multiple starting points feed into the same traversal at once (e.g. all rotten oranges, all border cells)",
+          "The question is phrased forward ('can water flow from cell X to the ocean?') but is far cheaper solved backward ('start at the ocean and see what can reach it')"
+        ],
+        "intuition": "Instead of testing reachability from every interior cell one at a time (expensive), seed the traversal with ALL source cells simultaneously and flood outward in one pass. For Pacific Atlantic, run one reverse traversal from every Pacific-adjacent border cell and one from every Atlantic-adjacent border cell; a cell reachable in both is the answer.",
+        "template": "def multi_source_bfs(grid, sources):\n    rows, cols = len(grid), len(grid[0])\n    visited = set(sources)\n    q = deque(sources)          # seed ALL sources at once, not one at a time\n    while q:\n        r, c = q.popleft()\n        for dr, dc in DIRS:\n            nr, nc = r + dr, c + dc\n            if 0 <= nr < rows and 0 <= nc < cols and (nr, nc) not in visited \\\n               and grid[nr][nc] >= grid[r][c]:   # reversed comparison vs the forward problem\n                visited.add((nr, nc))\n                q.append((nr, nc))\n    return visited",
+        "complexity": {
+          "time": "O(V+E)",
+          "space": "O(V)"
+        },
+        "commonMistakes": [
+          "Running one traversal per source individually instead of seeding all sources into one queue/pass, turning O(V+E) into O(V*(V+E))",
+          "For Pacific Atlantic, forgetting to reverse the height comparison — going backward from the ocean means moving to cells with height >= current, not <=",
+          "Off-by-one on which cells belong to which ocean's starting set at the four grid corners"
+        ],
+        "walkthrough": "Rotting Oranges: seed the queue with every initially-rotten cell's coordinates at minute 0, then BFS outward one layer per minute; the answer is the minute count when the queue empties, or -1 if any fresh orange is still unreached.",
+        "resources": [
+          {
+            "title": "Pacific Atlantic Water Flow - Leetcode 417 - Python",
+            "creator": "NeetCode",
+            "format": "Video",
+            "priority": "REQUIRED",
+            "url": "https://www.youtube.com/watch?v=s-VkcjHqkGI",
+            "instruction": "Watch the full video — pay specific attention to why the traversal starts at the two oceans and runs backward instead of starting at each interior cell.",
+            "duration": "16 min",
+            "startTime": null,
+            "endTime": null,
+            "verifiedTitle": "Pacific Atlantic Water Flow - Leetcode 417 - Python",
+            "verifiedAt": "2026-09-13"
+          }
+        ]
+      }
+    ]
+  },
+  32: {
+    "day": 32,
+    "patterns": [
+      {
+        "id": "topological-sort-cycle-detection",
+        "name": "Topological Sort & Cycle Detection",
+        "recognition": [
+          "The problem describes prerequisites/dependencies between items",
+          "You need to detect whether a directed graph has a cycle",
+          "You need a valid ordering of nodes that respects every directed edge"
+        ],
+        "intuition": "Two equivalent approaches. Kahn's algorithm (BFS): repeatedly remove nodes with in-degree 0, appending them to the order — if you can't remove all nodes, a cycle exists. DFS 3-colour: mark each node WHITE (unvisited) / GRAY (on the current recursion stack) / BLACK (fully processed) — reaching a GRAY node again means a back edge, i.e. a cycle.",
+        "template": "# Kahn's algorithm (BFS)\ndef topo_order(n, prereq_edges):\n    adj = [[] for _ in range(n)]\n    indeg = [0]*n\n    for a, b in prereq_edges:   # b is a prerequisite of a\n        adj[b].append(a)\n        indeg[a] += 1\n    q = deque([i for i in range(n) if indeg[i] == 0])\n    order = []\n    while q:\n        node = q.popleft()\n        order.append(node)\n        for nxt in adj[node]:\n            indeg[nxt] -= 1\n            if indeg[nxt] == 0:\n                q.append(nxt)\n    return order if len(order) == n else []   # empty = cycle detected",
+        "complexity": {
+          "time": "O(V+E)",
+          "space": "O(V+E)"
+        },
+        "commonMistakes": [
+          "Using a plain visited/unvisited boolean for DFS cycle detection instead of 3 states — this can't distinguish 'currently on the recursion stack' from 'already fully explored', missing real cycles",
+          "Building the edge direction backwards (prerequisite -> course is correct; course -> prerequisite silently produces a wrong but sometimes still-valid-looking order)",
+          "Forgetting that Course Schedule II's answer array IS the Kahn's-algorithm output order directly — no separate reconstruction pass needed"
+        ],
+        "walkthrough": "4 courses, edges (1 requires 0), (2 requires 0), (3 requires 1), (3 requires 2): in-degrees start [0,1,1,2]; 0 has indeg 0, remove it -> indeg becomes [_,0,0,2]; remove 1 and 2 -> indeg[3] becomes 0; remove 3. Order [0,1,2,3] (or [0,2,1,3]) is valid; all 4 nodes were removed, so no cycle.",
+        "resources": [
+          {
+            "title": "Course Schedule II - Topological Sort - Leetcode 210",
+            "creator": "NeetCode",
+            "format": "Video",
+            "priority": "REQUIRED",
+            "url": "https://www.youtube.com/watch?v=Akt3glAwyfY",
+            "instruction": "Watch the full video — it builds Kahn's algorithm from first principles (in-degree array, queue of zero-in-degree nodes), which is the reusable pattern for all three of today's problems.",
+            "duration": "17 min",
+            "startTime": null,
+            "endTime": null,
+            "verifiedTitle": "Course Schedule II - Topological Sort - Leetcode 210",
+            "verifiedAt": "2026-09-13"
+          }
+        ]
+      }
+    ]
+  },
+  33: {
+    "day": 33,
+    "patterns": [
+      {
+        "id": "union-find-dsu",
+        "name": "Disjoint Set Union / Union-Find",
+        "recognition": [
+          "You're incrementally adding edges/connections and need to answer 'are these two things already in the same group?'",
+          "You need to detect the specific edge that FIRST creates a cycle while adding edges one at a time",
+          "You need to merge groups efficiently (e.g. merging accounts that share an email)"
+        ],
+        "intuition": "Maintain a parent array. find(x) walks up parent pointers to the group's root, and path-compresses every visited node straight to that root on the way. union(x,y) finds both roots and attaches the smaller/shallower tree under the larger one (union by rank/size). Two nodes are in the same group iff find(x) == find(y).",
+        "template": "class DSU:\n    def __init__(self, n):\n        self.parent = list(range(n))\n        self.rank = [0]*n\n\n    def find(self, x):\n        if self.parent[x] != x:\n            self.parent[x] = self.find(self.parent[x])   # path compression\n        return self.parent[x]\n\n    def union(self, x, y):\n        rx, ry = self.find(x), self.find(y)\n        if rx == ry:\n            return False        # already connected -> this edge is redundant/a cycle\n        if self.rank[rx] < self.rank[ry]:\n            rx, ry = ry, rx\n        self.parent[ry] = rx\n        if self.rank[rx] == self.rank[ry]:\n            self.rank[rx] += 1\n        return True",
+        "complexity": {
+          "time": "O(alpha(n)) amortized per operation — effectively O(1)",
+          "space": "O(n)"
+        },
+        "commonMistakes": [
+          "Skipping path compression or union by rank, degrading the structure to O(n) per operation on adversarial inputs",
+          "Calling union on two nodes without checking whether find(x) != find(y) first when the goal is specifically to detect the redundant/cycle-creating edge",
+          "For Accounts Merge, unioning by account/email index but forgetting to map back from indices to the actual emails/owner names when assembling the final output"
+        ],
+        "walkthrough": "Edges (1,2), (1,3), (2,3) added one at a time: union(1,2) succeeds (different roots); union(1,3) succeeds; union(2,3) finds root(2)==root(3) already -> this is the redundant edge, return it as the answer.",
+        "resources": [
+          {
+            "title": "Union Find Introduction",
+            "creator": "WilliamFiset",
+            "format": "Video",
+            "priority": "REQUIRED",
+            "url": "https://www.youtube.com/watch?v=ibjEGG7ylHk",
+            "instruction": "Watch the full video for the core Union-Find/DSU idea (parent pointers, find, union) before touching path compression and union-by-rank in the template above.",
+            "duration": "6 min",
+            "startTime": null,
+            "endTime": null,
+            "verifiedTitle": "Union Find Introduction",
+            "verifiedAt": "2026-09-13"
+          }
+        ]
+      }
+    ]
+  },
+  34: {
+    "day": 34,
+    "patterns": [
+      {
+        "id": "dijkstra",
+        "name": "Dijkstra's Shortest Path",
+        "recognition": [
+          "Edge weights are non-negative",
+          "You need the shortest/cheapest/minimum-effort path in a weighted graph",
+          "Plain BFS would be wrong because 'fewest edges' is not the same as 'lowest total weight'"
+        ],
+        "intuition": "Use a min-heap keyed by current best distance. Repeatedly pop the closest unfinished node, and relax (try to improve) the distance to each of its neighbours. Because you always expand the globally closest unfinished node next, a node's distance is final the moment it's popped.",
+        "template": "import heapq\ndef dijkstra(n, adj, src):\n    dist = [float('inf')]*n\n    dist[src] = 0\n    heap = [(0, src)]\n    while heap:\n        d, node = heapq.heappop(heap)\n        if d > dist[node]:\n            continue          # stale heap entry, skip it\n        for nb, weight in adj[node]:\n            nd = d + weight\n            if nd < dist[nb]:\n                dist[nb] = nd\n                heapq.heappush(heap, (nd, nb))\n    return dist",
+        "complexity": {
+          "time": "O((V+E) log V)",
+          "space": "O(V)"
+        },
+        "commonMistakes": [
+          "Using plain BFS on a weighted graph — BFS only guarantees fewest edges, not lowest total weight",
+          "Not skipping a popped entry whose distance is stale (larger than the already-finalized distance) — the heap can hold several outdated entries for the same node",
+          "For Minimum Effort Path specifically: relaxing on the SUM of weights instead of the MAX edge weight seen so far along the path — that problem is a minimax path, a different relaxation rule"
+        ],
+        "walkthrough": "Graph 0->1 (w=4), 0->2 (w=1), 2->1 (w=1): pop (0,0), relax 1->4 and 2->1, push both; pop (1,2), relax 1 via 2: 1+1=2 < 4, update dist[1]=2; pop (2,1), done. Shortest 0->1 is 2, not the direct edge's 4.",
+        "resources": [
+          {
+            "title": "Dijkstra's Shortest Path Algorithm | Graph Theory",
+            "creator": "WilliamFiset",
+            "format": "Video",
+            "priority": "REQUIRED",
+            "url": "https://www.youtube.com/watch?v=pSqmAO-m7Lk",
+            "instruction": "Watch the full video for the heap-based relaxation loop and why a popped node's distance is guaranteed final.",
+            "duration": "25 min",
+            "startTime": null,
+            "endTime": null,
+            "verifiedTitle": "Dijkstra's Shortest Path Algorithm | Graph Theory",
+            "verifiedAt": "2026-09-13"
+          }
+        ]
+      },
+      {
+        "id": "bellman-ford-constrained-relaxation",
+        "name": "Bellman-Ford / Constrained Relaxation",
+        "recognition": [
+          "Edge weights can be negative, or the graph may contain a negative cycle",
+          "The shortest path is constrained by a maximum number of edges/stops (e.g. 'at most K stops')",
+          "Dijkstra's 'a finalized node is never revisited' assumption doesn't hold, because a worse-weight-but-fewer-edges path can still be the answer under the constraint"
+        ],
+        "intuition": "Relax every edge repeatedly — up to V-1 times for the unconstrained shortest path, or K+1 times for a K-stop constraint — using a SNAPSHOT of the previous round's distances so a single round can't accidentally chain multiple relaxations together. That snapshot is exactly what enforces the 'at most K edges' bound.",
+        "template": "def cheapest_with_k_stops(n, flights, src, dst, k):\n    dist = [float('inf')]*n\n    dist[src] = 0\n    for _ in range(k + 1):\n        prev = dist[:]                # snapshot — relax off LAST round's distances only\n        for u, v, price in flights:\n            if prev[u] + price < dist[v]:\n                dist[v] = prev[u] + price\n    return dist[dst] if dist[dst] != float('inf') else -1",
+        "complexity": {
+          "time": "O(V*E) unconstrained, O(K*E) for a K-stop bound",
+          "space": "O(V)"
+        },
+        "commonMistakes": [
+          "Relaxing in place during a single round instead of off a snapshot, letting one round silently chain 2+ edges and violating the stop/edge-count constraint",
+          "Running the full V-1 rounds for Cheapest Flights Within K Stops instead of capping at K+1 rounds",
+          "Assuming a node's distance is final partway through the rounds — unlike Dijkstra, Bellman-Ford only guarantees correctness after all required rounds complete"
+        ],
+        "walkthrough": "Flights 0->1 ($100), 1->2 ($100), 0->2 ($500), K=1 stop: round 1 relaxes dist[1]=100, dist[2]=500 (direct); round 2 (the K+1th) relaxes dist[2] via 1: 100+100=200 < 500, so dist[2]=200 using exactly 2 edges (1 stop).",
+        "resources": [
+          {
+            "title": "Bellman Ford Algorithm | Shortest path & Negative cycles | Graph Theory",
+            "creator": "WilliamFiset",
+            "format": "Video",
+            "priority": "REQUIRED",
+            "url": "https://www.youtube.com/watch?v=lyw4FaxrwHg",
+            "instruction": "Watch the full video for the round-based relaxation idea and how it handles negative weights where Dijkstra can't.",
+            "duration": "15 min",
+            "startTime": null,
+            "endTime": null,
+            "verifiedTitle": "Bellman Ford Algorithm | Shortest path & Negative cycles | Graph Theory",
+            "verifiedAt": "2026-09-13"
+          }
+        ]
+      }
+    ]
+  },
+  35: {
+    "day": 35,
+    "patterns": [
+      {
+        "id": "week5-graph-review",
+        "name": "Week 5 Graph Algorithm Review",
+        "recognition": [
+          "Chaos day — no new pattern is introduced",
+          "The goal is to correctly SELECT among BFS, DFS, DSU, topological sort and Dijkstra/Bellman-Ford under time pressure, not to learn a new one"
+        ],
+        "commonMistakes": [
+          "Defaulting to DFS out of habit when the problem asks for shortest path in an unweighted graph (BFS) or a weighted one (Dijkstra)",
+          "Reaching for Union-Find only when the problem says 'connected components' instead of recognising it also fits incremental edge-addition/cycle-detection questions"
+        ],
+        "intuition": "The hardest part of graph problems in an interview is rarely implementing the algorithm — it's recognising which of the five algorithms from this week applies in under a minute. This review drills that recognition step in isolation from implementation.",
+        "resources": [
+          {
+            "title": "Graph-Algorithm Decision Tree",
+            "creator": "Mirror49 internal",
+            "format": "Internal exercise",
+            "priority": "REQUIRED",
+            "instruction": "Read once, then try to reproduce it from memory on a blank page before checking today's DSA problems against it.",
+            "duration": "10 min",
+            "verifiedAt": "2026-09-13",
+            "content": "DECISION TREE\n\n1. Is the graph given as a 2D grid? -> Treat cells as nodes with a 4-direction offset array; go to step 2 using grid-BFS/DFS.\n2. Do you need shortest number of EDGES (unweighted), or just reachability/component membership? -> BFS (shortest edges) or DFS (reachability only).\n3. Are edges weighted, all non-negative? -> Dijkstra (min-heap relaxation).\n4. Are edges weighted with possible negative values, OR is there a max-edges/max-stops constraint? -> Bellman-Ford-style bounded relaxation.\n5. Are you incrementally adding edges and need 'same group?' or 'first edge that creates a cycle?' -> Union-Find / DSU.\n6. Is there a dependency/prerequisite relationship, or do you need to detect a cycle in a DIRECTED graph / produce a valid ordering? -> Topological sort (Kahn's BFS or DFS 3-colour).\n7. Do multiple starting points feed the same traversal, or is 'start from the boundary/target and work backward' cheaper than starting from every interior cell? -> Multi-source / reverse BFS-DFS."
+          },
+          {
+            "title": "BFS vs DFS vs DSU vs Topological Sort vs Dijkstra — Recognition Quiz",
+            "creator": "Mirror49 internal",
+            "format": "Internal exercise",
+            "priority": "REQUIRED",
+            "instruction": "Answer all 8 without looking at the decision tree, then self-grade against the answer key.",
+            "duration": "15 min",
+            "verifiedAt": "2026-09-13",
+            "content": "QUESTIONS\n\n1. You're given a list of (account, email) pairs and must group accounts that share any email. Which algorithm?\n2. You're given flight routes with prices and must find the cheapest route using at most 2 stops. Which algorithm?\n3. You're given a grid of 0s and 1s and must count the number of separate '1'-blobs. Which algorithm?\n4. You're given course prerequisites and must determine if it's possible to finish all courses. Which algorithm?\n5. You're given a grid of terrain heights and must find every cell from which water can reach BOTH the Pacific and Atlantic border. Which algorithm/technique?\n6. You're given a weighted graph with all-positive edge weights and must find the shortest path from node A to node B. Which algorithm?\n7. You're adding edges to a graph one at a time and must report the exact edge that first creates a cycle. Which algorithm?\n8. You're given a graph with a possible negative-weight edge and must find shortest paths. Why can't you use Dijkstra here?\n\nANSWER KEY\n\n1. Union-Find/DSU — union accounts sharing an email, then group by root.\n2. Bellman-Ford-style bounded relaxation, capped at K+1=3 rounds.\n3. Grid multi-source/flood-fill traversal (BFS or DFS), counting how many times you start a fresh flood from an unvisited '1'.\n4. Topological sort / cycle detection on the directed prerequisite graph — if a valid order can't be produced, it's impossible.\n5. Multi-source reverse BFS/DFS, once from all Pacific-border cells and once from all Atlantic-border cells; answer is the intersection.\n6. Dijkstra — non-negative weights, min-heap relaxation.\n7. Union-Find — the first union() call where both endpoints already share a root is the cycle-creating edge.\n8. Dijkstra assumes a popped node's distance is final and never revisits it; a later negative edge could still improve that 'final' distance, which Dijkstra can't correct but Bellman-Ford's repeated full relaxation can."
+          },
+          {
+            "title": "45-Minute Timed Graph Mock",
+            "creator": "Mirror49 internal",
+            "format": "Internal exercise",
+            "priority": "REQUIRED",
+            "instruction": "Set a 45-minute timer. Re-solve one problem from each of Days 29, 31, 32 and 33 from a blank file, without looking at your prior solutions. Stop at 45 minutes regardless of completion.",
+            "duration": "45 min",
+            "verifiedAt": "2026-09-13",
+            "content": "MOCK STRUCTURE\n\n- Minute 0-5: read all 4 problems, write the algorithm name for each before coding anything.\n- Minute 5-40: implement in order of confidence, weakest pattern first (do it while you're freshest).\n- Minute 40-45: for any unfinished problem, write the approach and complexity in words even if the code isn't done — partial credit for correct reasoning beats no answer.\n\nSCORING\nStrong: all 4 correct algorithm identified within the first 5 minutes, at least 3/4 implemented and passing their own hand-traced test case.\nPartial: algorithm identified correctly for all 4, but 2 or fewer fully implemented.\nWeak: any problem where the wrong algorithm was chosen and not corrected within the 45 minutes."
+          },
+          {
+            "title": "Failure Analysis Log",
+            "creator": "Mirror49 internal",
+            "format": "Internal exercise",
+            "priority": "REQUIRED",
+            "instruction": "For every problem in the 45-minute mock that you got wrong, slow, or had to look up, fill in one row.",
+            "duration": "10 min",
+            "verifiedAt": "2026-09-13",
+            "content": "LOG TEMPLATE (one row per miss)\nProblem | Algorithm you picked | Correct algorithm | Root cause (recognition miss / implementation bug / complexity miscalculation) | One-sentence fix for next time\n\nReview this log again on Day 42 and Day 49 — if the same root cause repeats, that is the actual gap to close, not the specific problem."
+          },
+          {
+            "title": "Week 5 Scoring Rubric",
+            "creator": "Mirror49 internal",
+            "format": "Internal exercise",
+            "priority": "REQUIRED",
+            "instruction": "Score the week honestly before moving to Week 6.",
+            "duration": "5 min",
+            "verifiedAt": "2026-09-13",
+            "content": "RUBRIC\nStrong week: correctly identified the algorithm for all 8 quiz questions, scored Strong on the 45-minute mock, and the failure log (if any) has no repeated root cause.\nPartial week: quiz score 6/8 or better, mock scored Partial or better, at most one repeated root cause in the failure log.\nWeak week: quiz score below 6/8, OR mock scored Weak, OR the same root cause repeats 2+ times — revisit William Fiset's graph theory playlist (REFERENCE, see Day 35 Learning Resources) before Week 6."
+          }
+        ]
+      }
+    ]
+  },
+  36: {
+    "day": 36,
+    "patterns": [
+      {
+        "id": "backtracking-subsets-combinations",
+        "name": "Backtracking Decision Tree",
+        "recognition": [
+          "You must enumerate all subsets, combinations or arrangements, not just find one answer",
+          "The input is small (n <= ~20) so exponential exploration is acceptable",
+          "Each element has a binary or multi-way choice (include/exclude, or pick one of several next options)"
+        ],
+        "intuition": "Backtracking walks a decision tree depth-first: at each node you CHOOSE one option, EXPLORE the rest of the tree assuming that choice, then UNCHOOSE (undo) before trying the next option. The recursion stack IS the current partial solution, so undoing after the recursive call is what makes the same list reusable across every branch instead of allocating a new one per path.",
+        "template": "def backtrack(start, path):\n    if is_valid_end_state(path):\n        results.append(path[:])   # copy -- path is mutated in place\n        # do not return here if subsets of every length are wanted\n\n    for i in range(start, len(nums)):\n        if should_skip(i, start):        # duplicate-skipping guard, if needed\n            continue\n        path.append(nums[i])             # choose\n        backtrack(i + 1, path)           # explore  (use i, not i+1, if elements are reusable)\n        path.pop()                       # unchoose",
+        "complexity": {
+          "time": "O(2^n) for subsets, up to O(n!) for permutations -- driven by the number of leaves in the decision tree",
+          "space": "O(n) recursion depth, plus O(2^n) or O(n!) to store all results"
+        },
+        "commonMistakes": [
+          "Appending `path` itself instead of `path[:]` (a copy) -- every result then points at the same mutated list and ends up wrong",
+          "Forgetting `path.pop()` after the recursive call -- the choice is never undone, so later branches see a corrupted path",
+          "For Subsets II (duplicates), sorting the input but forgetting to skip `nums[i] == nums[i-1]` at the same recursion depth -- this produces duplicate subsets",
+          "For Combination Sum (reuse allowed), recursing with `i+1` instead of `i` -- this accidentally forbids reusing the same number"
+        ],
+        "walkthrough": "nums=[1,2] for Subsets: start=(0,[]) -> append [] to results -> i=0: choose 1 -> path=[1] -> append [1] -> i=1: choose 2 -> path=[1,2] -> append [1,2] -> unchoose 2 -> unchoose 1 -> i=1: choose 2 -> path=[2] -> append [2] -> unchoose 2. Results: [[],[1],[1,2],[2]].",
+        "resources": [
+          {
+            "title": "Subsets - Backtracking - Leetcode 78",
+            "creator": "NeetCode",
+            "format": "Video",
+            "priority": "REQUIRED",
+            "url": "https://www.youtube.com/watch?v=REOH22Xwdkk",
+            "instruction": "Watch the full video -- focus on the choose/explore/unchoose recursion shape, not just this one problem.",
+            "duration": "9 min",
+            "startTime": null,
+            "endTime": null,
+            "verifiedTitle": "Subsets - Backtracking - Leetcode 78",
+            "verifiedAt": "2026-09-13"
+          }
+        ]
+      }
+    ]
+  },
+  37: {
+    "day": 37,
+    "patterns": [
+      {
+        "id": "backtracking-permutations-grid",
+        "name": "Permutation & Grid Backtracking",
+        "recognition": [
+          "You must generate every ordering (not subset) of a fixed set of elements",
+          "You are searching a 2D grid for a path matching a target sequence, exploring in up to 4 directions",
+          "Each cell/element can only be used once per path, and must become reusable after the path backs away from it"
+        ],
+        "intuition": "Permutation backtracking needs a way to know which elements are already placed in the current path -- either a `used[]` boolean array (when elements can repeat in value) or by removing from a working list. Grid backtracking (Word Search) instead marks the CURRENT CELL as visited, explores its neighbours, and restores the cell before returning -- that restoration is what lets other paths reuse the same cell.",
+        "template": "# Permutations (used[] variant)\ndef backtrack(path, used):\n    if len(path) == len(nums):\n        results.append(path[:]); return\n    for i in range(len(nums)):\n        if used[i]: continue\n        used[i] = True\n        path.append(nums[i])\n        backtrack(path, used)\n        path.pop()\n        used[i] = False\n\n# Grid backtracking (Word Search)\ndef dfs(r, c, i):\n    if i == len(word): return True\n    if not in_bounds(r, c) or grid[r][c] != word[i] or (r, c) in visited:\n        return False\n    visited.add((r, c))\n    found = any(dfs(r+dr, c+dc, i+1) for dr, dc in DIRECTIONS)\n    visited.remove((r, c))          # restore -- lets other paths use this cell\n    return found",
+        "complexity": {
+          "time": "Permutations: O(n! * n). Word Search: O(m*n*4^L) where L is the word length",
+          "space": "O(n) for used[]/path depth; O(L) for grid recursion depth"
+        },
+        "commonMistakes": [
+          "Using a `used[]` array AND advancing a start index at the same time -- pick one strategy per problem; mixing them misses or duplicates branches",
+          "In Word Search, marking a cell visited but forgetting to un-mark it on the way back up -- later paths then incorrectly treat it as blocked",
+          "Not checking grid bounds before indexing -- an off-by-one here throws instead of just failing the branch"
+        ],
+        "walkthrough": "Permutations of [1,2]: pick 1 (used=[T,F]) -> pick 2 (used=[T,T]) -> path=[1,2] recorded -> unwind -> used=[T,F] -> pick 2 first (used=[F,T]) -> pick 1 (used=[T,T]) -> path=[2,1] recorded.",
+        "resources": [
+          {
+            "title": "Backtracking: Permutations - Leetcode 46 - Python",
+            "creator": "NeetCode",
+            "format": "Video",
+            "priority": "REQUIRED",
+            "url": "https://www.youtube.com/watch?v=s7AvT7cGdSo",
+            "instruction": "Watch the full video for the used[]-array recursion shape; the grid-backtracking half of today's primer text (above) covers Word Search's visited-set variant.",
+            "duration": "10 min",
+            "startTime": null,
+            "endTime": null,
+            "verifiedTitle": "Backtracking: Permutations - Leetcode 46 - Python",
+            "verifiedAt": "2026-09-13"
+          }
+        ]
+      }
+    ]
+  },
+  38: {
+    "day": 38,
+    "patterns": [
+      {
+        "id": "greedy-reachability-balance",
+        "name": "Greedy -- Local Choice Backed by an Invariant",
+        "recognition": [
+          "A question asks for feasibility/reachability ('can you reach the end?') or an optimal count, and brute-forcing every choice is exponential",
+          "There is a running quantity (furthest reachable index, fuel balance, last-seen position) that provably never needs to decrease once bounded",
+          "An exchange argument shows any optimal solution can be rearranged to match the greedy choice without getting worse"
+        ],
+        "intuition": "Greedy is NOT 'always take the locally largest value' -- that is a common misconception. Real greedy requires proving an EXCHANGE ARGUMENT or INVARIANT: that the locally-best choice at each step can never make the final answer worse than any other choice would have. Jump Game tracks the furthest reachable index and only fails if the current position ever exceeds it. Gas Station relies on the invariant that if total gas >= total cost, some starting point works, and a running-balance reset finds it in one pass. Partition Labels uses each character's LAST occurrence index as a boundary that can never be crossed.",
+        "template": "# Reachability (Jump Game)\nfarthest = 0\nfor i, jump in enumerate(nums):\n    if i > farthest: return False       # can't even reach index i\n    farthest = max(farthest, i + jump)\nreturn True\n\n# Running-balance feasibility (Gas Station)\ntotal, tank, start = 0, 0, 0\nfor i in range(n):\n    diff = gas[i] - cost[i]\n    total += diff; tank += diff\n    if tank < 0:\n        start = i + 1                    # everything before i+1 is now invalid\n        tank = 0\nreturn start if total >= 0 else -1",
+        "complexity": {
+          "time": "O(n) -- one linear pass, sometimes two",
+          "space": "O(1)"
+        },
+        "commonMistakes": [
+          "Believing greedy means 'pick the biggest number available' -- without an invariant/exchange-argument proof, that's a guess, not greedy",
+          "Re-scanning from the start after a local failure instead of trusting the invariant that everything before the reset point is provably invalid",
+          "For Partition Labels, using the FIRST occurrence instead of the LAST occurrence as the boundary -- only the last occurrence guarantees the character never reappears in a later partition"
+        ],
+        "walkthrough": "Jump Game nums=[2,3,1,1,4]: i=0,farthest=2; i=1,farthest=max(2,4)=4; i=2,farthest=max(4,3)=4; i=3,farthest=max(4,4)=4; i=4,farthest=max(4,8)=8 -- i never exceeded farthest, so reachable.",
+        "resources": [
+          {
+            "title": "Jump Game - Greedy - Leetcode 55",
+            "creator": "NeetCode",
+            "format": "Video",
+            "priority": "REQUIRED",
+            "url": "https://www.youtube.com/watch?v=Yan0cv2cLy8",
+            "instruction": "Watch the full video for the reachability invariant; Gas Station's running-balance argument is covered in today's primer text (above).",
+            "duration": "16 min",
+            "startTime": null,
+            "endTime": null,
+            "verifiedTitle": "Jump Game - Greedy - Leetcode 55",
+            "verifiedAt": "2026-09-13"
+          }
+        ]
+      }
+    ]
+  },
+  39: {
+    "day": 39,
+    "patterns": [
+      {
+        "id": "dp-1d-state-transition",
+        "name": "1D Dynamic Programming",
+        "recognition": [
+          "The answer at position i depends only on the answers at a small, fixed number of earlier positions (i-1, i-2, ...)",
+          "You're asked for a count of ways, a min/max value, or a feasibility over a 1D sequence with overlapping subproblems",
+          "A brute-force recursive solution re-solves the same smaller subproblem many times"
+        ],
+        "intuition": "Before writing any code, name three things: (1) STATE -- what does dp[i] mean, in one sentence? (2) TRANSITION -- how is dp[i] built from smaller states? (3) BASE CASE -- what are dp[0]/dp[1] when there's nothing smaller to look at? Climbing Stairs: dp[i] = ways to reach step i = dp[i-1] + dp[i-2]. House Robber: dp[i] = max money robbable from houses 0..i = max(dp[i-1], dp[i-2] + nums[i]) -- either skip house i (keep dp[i-1]) or rob it (dp[i-2] plus its value). Coin Change: dp[amount] = min coins to make amount = min over each coin c of dp[amount-c]+1. Memoisation (top-down, cache recursive calls) and tabulation (bottom-up, fill an array in a loop) compute the same recurrence; tabulation is usually easy to compress to O(1) space since most 1D recurrences only look back 1-2 steps.",
+        "template": "# Tabulation shape shared by all three problems\ndp = [base_case_0, base_case_1] + [0] * (n - 1)\nfor i in range(2, n + 1):\n    dp[i] = combine(dp[i - 1], dp[i - 2], nums[i])   # combine = +, max(), or min()+1 depending on the problem\nreturn dp[n]\n\n# Space-optimised (only the last two states are ever needed)\nprev2, prev1 = base_case_0, base_case_1\nfor i in range(2, n + 1):\n    cur = combine(prev1, prev2, nums[i])\n    prev2, prev1 = prev1, cur\nreturn prev1",
+        "complexity": {
+          "time": "O(n) -- one pass once the recurrence is known",
+          "space": "O(n) tabulated, O(1) after space optimisation"
+        },
+        "commonMistakes": [
+          "Writing the recursion first and never stating the state/transition/base-case in words -- this is how off-by-one base-case bugs happen",
+          "Memoising on the wrong key (e.g. keying House Robber purely on index for a variant that also needs 'was the previous house robbed' in the state)",
+          "For Coin Change, initialising unreachable amounts to 0 instead of infinity before taking a min -- a 0 base case silently makes every amount look free"
+        ],
+        "walkthrough": "House Robber nums=[2,7,9,3,1]: dp[0]=2, dp[1]=max(2,7)=7, dp[2]=max(7,2+9)=11, dp[3]=max(11,7+3)=11, dp[4]=max(11,11+1)=12.",
+        "resources": [
+          {
+            "title": "House Robber -  Leetcode 198 - Python Dynamic Programming",
+            "creator": "NeetCode",
+            "format": "Video",
+            "priority": "REQUIRED",
+            "url": "https://www.youtube.com/watch?v=73r3KWiEvyk",
+            "instruction": "Watch the full video -- pay attention to how the state/transition is derived in words before any code is written.",
+            "duration": "11 min",
+            "startTime": null,
+            "endTime": null,
+            "verifiedTitle": "House Robber -  Leetcode 198 - Python Dynamic Programming",
+            "verifiedAt": "2026-09-13"
+          }
+        ]
+      }
+    ]
+  },
+  40: {
+    "day": 40,
+    "patterns": [
+      {
+        "id": "dp-sequence-lis",
+        "name": "Sequence DP -- Longest Increasing Subsequence",
+        "recognition": [
+          "You need the longest/shortest SUBSEQUENCE (elements need not be contiguous) satisfying an order constraint",
+          "A brute-force check of all 2^n subsequences is too slow",
+          "The state naturally indexes 'the best answer for a subsequence ending at position i'"
+        ],
+        "intuition": "dp[i] = length of the longest increasing subsequence that ENDS at index i (ending AT i, not just 'considering up to' i -- that distinction is what makes the transition well-defined). dp[i] = 1 + max(dp[j] for all j<i where nums[j] < nums[i]), or 1 if no such j exists. The answer is max(dp). This is O(n^2) because each i scans all earlier j. An O(n log n) variant exists using binary search over a 'smallest tail for each length' array -- worth knowing it exists, not required to derive today.",
+        "template": "dp = [1] * n            # every element is an LIS of length 1 by itself\nfor i in range(n):\n    for j in range(i):\n        if nums[j] < nums[i]:\n            dp[i] = max(dp[i], dp[j] + 1)\nreturn max(dp) if n else 0",
+        "complexity": {
+          "time": "O(n^2) (O(n log n) with binary search on tails)",
+          "space": "O(n)"
+        },
+        "commonMistakes": [
+          "Defining dp[i] as 'longest subsequence in nums[0..i]' instead of 'ending exactly at i' -- the looser definition breaks the transition, since you can't tell if extending is valid",
+          "Forgetting the base case dp[i]=1 (every single element is a valid length-1 subsequence)",
+          "Confusing this with the O(n) contiguous-subarray pattern (Kadane's) -- LIS elements need not be adjacent"
+        ],
+        "walkthrough": "nums=[10,9,2,5,3,7]: dp starts all 1s. i=3 (5): j=2 (2<5) -> dp[3]=2. i=5 (7): j=3 (5<7,dp=2) -> dp[5]=3; j=4 (3<7,dp=1) -> no improvement. max(dp)=3 (subsequence [2,5,7]).",
+        "resources": [
+          {
+            "title": "Longest Increasing Subsequence - Dynamic Programming - Leetcode 300",
+            "creator": "NeetCode",
+            "format": "Video",
+            "priority": "REQUIRED",
+            "url": "https://www.youtube.com/watch?v=cjWnW0hdF1Y",
+            "instruction": "Watch the full video for the O(n^2) dp[i]-ends-at-i derivation.",
+            "duration": "18 min",
+            "startTime": null,
+            "endTime": null,
+            "verifiedTitle": "Longest Increasing Subsequence - Dynamic Programming - Leetcode 300",
+            "verifiedAt": "2026-09-13"
+          }
+        ]
+      },
+      {
+        "id": "dp-grid-2string",
+        "name": "Grid & Two-String DP",
+        "recognition": [
+          "The problem naturally has two independent indices -- a grid (row, col) or two strings (i in s1, j in s2)",
+          "The answer at (i,j) depends only on a small neighbourhood: (i-1,j), (i,j-1), or (i-1,j-1)",
+          "You're counting paths, or comparing/aligning two sequences"
+        ],
+        "intuition": "Build a 2D table dp[i][j]. For grid path-counting (Unique Paths), dp[i][j] = dp[i-1][j] + dp[i][j-1] -- the number of ways to reach a cell is the sum of ways to reach the cell above and the cell to the left, since those are the only two moves allowed. For two-string alignment (Longest Common Subsequence), dp[i][j] = dp[i-1][j-1] + 1 when s1[i-1] == s2[j-1] (the matching characters extend the best subsequence found before both), else dp[i][j] = max(dp[i-1][j], dp[i][j-1]) (skip one character from either string, whichever leaves the better answer).",
+        "template": "# Grid path counting\ndp = [[1] * cols for _ in range(rows)]\nfor r in range(1, rows):\n    for c in range(1, cols):\n        dp[r][c] = dp[r-1][c] + dp[r][c-1]\nreturn dp[rows-1][cols-1]\n\n# Two-string LCS\ndp = [[0] * (len(s2)+1) for _ in range(len(s1)+1)]\nfor i in range(1, len(s1)+1):\n    for j in range(1, len(s2)+1):\n        if s1[i-1] == s2[j-1]:\n            dp[i][j] = dp[i-1][j-1] + 1\n        else:\n            dp[i][j] = max(dp[i-1][j], dp[i][j-1])\nreturn dp[-1][-1]",
+        "complexity": {
+          "time": "O(rows*cols) or O(len(s1)*len(s2))",
+          "space": "O(rows*cols), reducible to O(min dimension) by keeping only the previous row"
+        },
+        "commonMistakes": [
+          "Off-by-one between the dp table (usually 1 larger in each dimension, to hold an empty-prefix base case) and the raw string/grid indices -- always double-check s1[i-1], not s1[i], inside the loop",
+          "Forgetting to initialise the first row/column base case (all 1s for Unique Paths, all 0s for LCS) before the main loop",
+          "Assuming LCS characters must be contiguous -- LCS is a subsequence, so skipped characters on either side are allowed"
+        ],
+        "walkthrough": "LCS 'abc' vs 'ac': dp[1][1] ('a'='a') = 1; dp[1][2] ('a' vs 'ac', no new match) = max(dp[0][2],dp[1][1]) = 1; dp[2][2] ('b' vs 'c', no match) = max(dp[1][2],dp[2][1]) = 1; dp[3][2] ('c'='c') = dp[2][1]+1 = 2. LCS length = 2 ('ac').",
+        "resources": [
+          {
+            "title": "Unique Paths - Dynamic Programming - Leetcode 62",
+            "creator": "NeetCode",
+            "format": "Video",
+            "priority": "REQUIRED",
+            "url": "https://www.youtube.com/watch?v=IlEsdxuD4lY",
+            "instruction": "Watch the full video for the grid dp[i][j]=dp[i-1][j]+dp[i][j-1] derivation; today's primer text (above) extends the same 2D-table idea to LCS.",
+            "duration": "11 min",
+            "startTime": null,
+            "endTime": null,
+            "verifiedTitle": "Unique Paths - Dynamic Programming - Leetcode 62",
+            "verifiedAt": "2026-09-13"
+          }
+        ]
+      }
+    ]
+  },
+  41: {
+    "day": 41,
+    "patterns": [
+      {
+        "id": "dp-2d-string-knapsack",
+        "name": "2D String DP & 0/1 Knapsack",
+        "recognition": [
+          "You must transform one string into another with a minimum number of operations (insert/delete/replace)",
+          "You must decide, for each item, whether to include it (once) toward a target sum -- a binary choice per item, not unlimited reuse",
+          "A signed/directional variant ('assign + or - to each number') can be reduced to a subset-sum question by algebra"
+        ],
+        "intuition": "Edit Distance: dp[i][j] = min operations to convert s1[0..i) into s2[0..j). If the last characters match, dp[i][j]=dp[i-1][j-1] (no operation needed); otherwise dp[i][j] = 1 + min(dp[i-1][j] delete, dp[i][j-1] insert, dp[i-1][j-1] replace). 0/1 Knapsack / Partition Equal Subset Sum: dp[i][s] = can the first i items reach exact sum s, choosing each item at most once -- dp[i][s] = dp[i-1][s] (skip item i) OR dp[i-1][s-nums[i]] (take item i). Target Sum reduces to subset sum: if P is the subset assigned '+' and N is assigned '-', then P - N = target and P + N = total, so P = (target+total)/2 -- count subsets summing to P using the same knapsack table. The reduction is only valid when (target+total) is even and non-negative; otherwise no assignment exists.",
+        "template": "# Edit Distance\ndp = [[0]*(len(s2)+1) for _ in range(len(s1)+1)]\nfor i in range(len(s1)+1): dp[i][0] = i\nfor j in range(len(s2)+1): dp[0][j] = j\nfor i in range(1, len(s1)+1):\n    for j in range(1, len(s2)+1):\n        if s1[i-1] == s2[j-1]:\n            dp[i][j] = dp[i-1][j-1]\n        else:\n            dp[i][j] = 1 + min(dp[i-1][j], dp[i][j-1], dp[i-1][j-1])\n\n# 0/1 Knapsack / subset-sum reachability\ndp = [False] * (target + 1); dp[0] = True\nfor num in nums:\n    for s in range(target, num - 1, -1):    # iterate DOWN so each item is used at most once\n        dp[s] = dp[s] or dp[s - num]\nreturn dp[target]",
+        "complexity": {
+          "time": "O(len(s1)*len(s2)) for Edit Distance; O(n*target) for the knapsack table",
+          "space": "O(len(s1)*len(s2)) or O(target) with the 1D rolling-array knapsack trick"
+        },
+        "commonMistakes": [
+          "In the knapsack loop, iterating the sum dimension forwards instead of backwards -- forward iteration lets an item be reused multiple times, silently turning 0/1 knapsack into unbounded knapsack",
+          "Applying the Target Sum reduction without checking (target+total) is even and target<=total -- an invalid reduction silently returns a wrong count or crashes on a negative array size",
+          "For Edit Distance, forgetting the base rows/columns dp[i][0]=i and dp[0][j]=j -- these represent deleting/inserting every remaining character with no match yet found"
+        ],
+        "walkthrough": "Edit Distance 'cat' -> 'cut': dp[1][1] ('c'='c') = 0; dp[2][2] ('a' vs 'u', mismatch) = 1+min(dp[1][2],dp[2][1],dp[1][1]) = 1+0 = 1; dp[3][3] ('t'='t') = dp[2][2] = 1. One substitution ('a'->'u') needed.",
+        "resources": [
+          {
+            "title": "Edit Distance - Dynamic Programming - Leetcode 72 - Python",
+            "creator": "NeetCode",
+            "format": "Video",
+            "priority": "REQUIRED",
+            "url": "https://www.youtube.com/watch?v=XYi2-LPrwm4",
+            "instruction": "Watch the full video for the 2D string-alignment table; today's primer text (above) extends the same dp[i][j] idea to 0/1 knapsack and the Target Sum reduction.",
+            "duration": "21 min",
+            "startTime": null,
+            "endTime": null,
+            "verifiedTitle": "Edit Distance - Dynamic Programming - Leetcode 72 - Python",
+            "verifiedAt": "2026-09-13"
+          }
+        ]
+      }
+    ]
+  },
+  42: {
+    "day": 42,
+    "patterns": [
+      {
+        "id": "week6-dp-review",
+        "name": "Week 6 Review -- Backtracking & DP Recognition",
+        "recognition": [
+          "No new pattern today -- this reviews backtracking (Days 36-37), greedy (Day 38) and DP (Days 39-41)"
+        ],
+        "commonMistakes": [
+          "Writing a recurrence before stating, in words, what the state variable(s) represent",
+          "Assuming a greedy solution is correct because it 'feels obviously optimal' instead of naming the invariant that proves it"
+        ],
+        "intuition": "The fastest way to fail a DP interview question is to start coding before naming the state. Today's drills force that discipline under time pressure, and force an honest self-check on which of the five patterns this week actually applies to a given problem before you touch a recurrence.",
+        "resources": [
+          {
+            "title": "DP State-Definition Quiz",
+            "creator": "Mirror49 internal",
+            "format": "Internal exercise",
+            "priority": "REQUIRED",
+            "instruction": "Answer all 6 without running code. Check yourself against the answer key inside.",
+            "duration": "20 min",
+            "verifiedAt": "2026-09-13",
+            "content": "QUESTIONS\n\n1. Define dp[i] in one sentence for Climbing Stairs, and give the transition.\n2. Define dp[i] in one sentence for Longest Increasing Subsequence. Why must it be 'ending exactly at i', not 'best up to i'?\n3. Define dp[i][j] for Edit Distance. What do dp[i][0] and dp[0][j] represent, and why are they not 0?\n4. A problem asks for the number of ways to reach a target sum using each number at most once. Is this 0/1 knapsack or unbounded knapsack? What single line of code changes between the two?\n5. Target Sum gives you +/- assignment choices and a target T. Write the algebraic reduction to subset-sum in your own words, and state the one condition under which no valid assignment exists.\n6. What's the difference between memoisation and tabulation? Name one class of problem where tabulation is easy to space-optimise and one where it is not.\n\nANSWER KEY\n\n1. dp[i] = number of distinct ways to reach step i. dp[i] = dp[i-1] + dp[i-2] (arrive via a 1-step or a 2-step move).\n2. dp[i] = length of the longest increasing subsequence ending exactly at index i. It must end at i (not just 'be found somewhere in 0..i') because the transition dp[i] = 1 + max(dp[j]) for nums[j] < nums[i] only makes sense if dp[j] is guaranteed to actually end at j -- otherwise you could not safely chain nums[i] onto it.\n3. dp[i][j] = edit distance between s1[0..i) and s2[0..j). dp[i][0] = i because turning a length-i prefix into an empty string takes i deletions; dp[0][j] = j because turning an empty string into a length-j prefix takes j insertions -- neither is 0 because there is real work to do.\n4. 0/1 knapsack (each number used once). The line that changes: the sum-dimension loop must iterate backwards (`for s in range(target, num-1, -1)`) in 0/1 knapsack; forwards iteration turns it into unbounded knapsack.\n5. total = sum(nums). If P is the subset assigned '+', P - (total - P) = T, so P = (T + total) / 2. Count subsets summing to P via 0/1 knapsack. No valid assignment exists if (T + total) is odd, or if P is negative or greater than total.\n6. Memoisation is top-down recursion with a cache (write the recursive solution first, add a dict/array cache); tabulation is bottom-up, filling an array in a loop from base cases upward. 1D recurrences that only look back a fixed small window (Climbing Stairs, House Robber) space-optimise easily to O(1) by keeping just the last 1-2 values. 2D table problems (Edit Distance, LCS) are harder to fully collapse, though they can often drop to O(one dimension) by keeping only the previous row.\n\nSCORING: 5-6 correct = strong, 3-4 = partial (re-derive the missed transitions from scratch, don't just re-read the answer), 0-2 = weak (redo Days 39-41's primers before continuing)."
+          },
+          {
+            "title": "Memoisation to Tabulation Conversion Drill",
+            "creator": "Mirror49 internal",
+            "format": "Internal exercise",
+            "priority": "REQUIRED",
+            "instruction": "Take your own Coin Change solution from Day 39 (or rewrite it from memory) as top-down memoisation, then convert it to bottom-up tabulation without looking anything up. Compare both against the two templates below.",
+            "duration": "20 min",
+            "verifiedAt": "2026-09-13",
+            "content": "TOP-DOWN (memoisation) shape:\n\ndef solve(amount, memo={}):\n    if amount == 0: return 0\n    if amount < 0: return float('inf')\n    if amount in memo: return memo[amount]\n    best = min(solve(amount - c) for c in coins) + 1\n    memo[amount] = best\n    return best\n\nBOTTOM-UP (tabulation) shape:\n\ndp = [float('inf')] * (target + 1)\ndp[0] = 0\nfor amt in range(1, target + 1):\n    for c in coins:\n        if amt - c >= 0:\n            dp[amt] = min(dp[amt], dp[amt - c] + 1)\nreturn dp[target] if dp[target] != float('inf') else -1\n\nCHECK YOURSELF: does your tabulated version fill dp[amt] strictly AFTER every dp[amt-c] it depends on has already been computed? If you had to change the loop order to make it work, that's the dependency direction the recurrence requires -- name it in one sentence."
+          },
+          {
+            "title": "1D vs 2D DP Decision Checklist",
+            "creator": "Mirror49 internal",
+            "format": "Internal exercise",
+            "priority": "REQUIRED",
+            "instruction": "Before starting any DP problem this week's mock throws at you, run down this checklist out loud.",
+            "duration": "10 min",
+            "verifiedAt": "2026-09-13",
+            "content": "1. How many independent quantities does the state depend on? One index (position in one sequence) -> 1D DP. Two indices (two strings, or row+col) -> 2D DP.\n2. Is this counting ways, finding a min/max, or checking feasibility (true/false)? This decides whether transitions combine with +, min()/max(), or or/and.\n3. Does an item get used once, unlimited times, or not at all? Once -> 0/1 knapsack (iterate sum dimension backwards). Unlimited -> unbounded knapsack (iterate forwards).\n4. Can I state dp[state] in one plain-English sentence before writing any code? If not, stop and figure that out first -- do not start coding a recurrence you can't describe in words.\n5. What are the base cases, and do they represent 'nothing done yet' (usually 0) or 'impossible' (usually infinity or -infinity)? Get this wrong and every downstream min/max silently corrupts."
+          },
+          {
+            "title": "Timed Backtracking/Greedy/DP Mock",
+            "creator": "Mirror49 internal",
+            "format": "Internal exercise",
+            "priority": "REQUIRED",
+            "instruction": "45 minutes, closed notes. Pick 3 problems you have not re-solved this week (one backtracking, one greedy, one DP) from Days 36-41's problem lists. For each: state the pattern out loud before coding, name state/transition/base-case for DP problems, implement, then check against your Day 36-41 primer notes only after attempting.",
+            "duration": "45 min",
+            "verifiedAt": "2026-09-13",
+            "content": "TIMING: 15 minutes per problem, strict. If you can't state the pattern in the first 3 minutes, that is itself the finding -- write down which recognition signal you missed and move on rather than burning the full 15 minutes stuck.\n\nAFTER ALL THREE: for each problem, log one sentence: 'I recognised this pattern because ___' or 'I missed this pattern because ___'. That log is what Day 47's rapid-fire review and the Week 7 consolidation sheet are built from -- do not skip it."
+          },
+          {
+            "title": "Week 6 Scoring Rubric",
+            "creator": "Mirror49 internal",
+            "format": "Internal exercise",
+            "priority": "REQUIRED",
+            "instruction": "Score the timed mock honestly before moving to Week 7.",
+            "duration": "5 min",
+            "verifiedAt": "2026-09-13",
+            "content": "STRONG: all 3 problems solved within 15 minutes each, pattern correctly identified before coding, correct time/space complexity stated unprompted.\nPARTIAL: 2 of 3 solved in time, or pattern identified correctly but with a hint needed on the transition/invariant.\nWEAK: 1 or 0 solved in time, or pattern misidentified (e.g. reaching for DP when greedy suffices, or vice versa).\n\nIf WEAK on backtracking: redo Day 36-37's templates from a blank page before Week 7.\nIf WEAK on greedy: re-derive Day 38's exchange-argument reasoning in your own words, don't just re-watch the video.\nIf WEAK on DP: redo the DP State-Definition Quiz above from memory, then redo one problem per day from Days 39-41."
+          }
+        ]
+      }
+    ]
+  },
+  43: {
+    "day": 43,
+    "patterns": [
+      {
+        "id": "bit-manipulation-xor",
+        "name": "XOR, Masks and Shifts",
+        "recognition": [
+          "A value appears an odd number of times among values that otherwise appear an even number of times",
+          "You need to test, set, or clear one specific bit without touching the others",
+          "You're asked to relate the popcount (number of set bits) of n to the popcount of a smaller, related number"
+        ],
+        "intuition": "XOR is its own inverse: x^x=0 and x^0=x, and XOR is commutative/associative, so XOR-ing every element of an array cancels every value that appears in pairs and leaves only the odd one out — O(1) extra space where a hash set would need O(n). Separately, n & (n-1) clears the lowest set bit of n in one step (subtracting 1 flips every trailing zero to one and the lowest set bit to zero; ANDing with the original wipes exactly that bit). That single identity is the key to Counting Bits: countBits[n] = countBits[n & (n-1)] + 1.",
+        "template": "# XOR to find the single non-duplicate value\nresult = 0\nfor x in nums:\n    result ^= x\nreturn result\n\n# Test / set / clear bit i (0-indexed from the right)\nis_set = (n >> i) & 1\nset_bit = n | (1 << i)\nclear_bit = n & ~(1 << i)\n\n# Clear the lowest set bit -- the core Counting Bits identity\nn_with_lowest_bit_cleared = n & (n - 1)\n\n# Counting Bits, O(n) total via the identity above\ndef count_bits(n):\n    ans = [0] * (n + 1)\n    for i in range(1, n + 1):\n        ans[i] = ans[i & (i - 1)] + 1\n    return ans",
+        "complexity": {
+          "time": "O(n) to scan an n-element array, or O(32) per fixed-width integer",
+          "space": "O(1) beyond any required output array"
+        },
+        "commonMistakes": [
+          "Reaching for a hash set to find the unique element (O(n) space) when XOR gives the same answer in O(1) space",
+          "Believing n & (n-1) clears the HIGHEST set bit -- it clears the LOWEST set bit",
+          "Hardcoding a 32-bit loop when the language's integers are arbitrary precision (Python) and the true bit-length of n matters"
+        ],
+        "walkthrough": "nums = [4,1,2,1,2]: 4^1^2^1^2 -- the two 1s cancel, the two 2s cancel, leaving 4 as the unique value.\nCounting bits for n=5 (0b101): countBits[5] = countBits[5 & 4] + 1 = countBits[0b100] + 1 = countBits[4 & 3] + 1 + 1 = countBits[0] + 2 = 2. Matches popcount(0b101)=2 directly.",
+        "resources": [
+          {
+            "title": "Single Number - Leetcode 136 - Python",
+            "creator": "NeetCode",
+            "format": "Video",
+            "priority": "REQUIRED",
+            "url": "https://www.youtube.com/watch?v=qMPX1AOa83k",
+            "instruction": "Watch the full video -- the canonical XOR-cancellation pattern behind today's Single Number problem, and the same identity underlies Counting Bits.",
+            "duration": "7 min",
+            "startTime": null,
+            "endTime": null,
+            "verifiedTitle": "Single Number - Leetcode 136 - Python",
+            "verifiedAt": "2026-09-13"
+          },
+          {
+            "title": "Master Bit Manipulation in One Video | XOR Tricks + Interview Questions",
+            "creator": "Padho with Pratyush",
+            "format": "Video",
+            "priority": "OPTIONAL",
+            "url": "https://www.youtube.com/watch?v=T56nhL8Y1po",
+            "instruction": "Optional deep dive only if you want more practice -- full video (61 min, covers XOR/AND/OR/shift tricks and interview questions end to end). Not required.",
+            "duration": "61 min",
+            "startTime": null,
+            "endTime": null,
+            "verifiedTitle": "Master Bit Manipulation in One Video | XOR Tricks + Interview Questions",
+            "verifiedAt": "2026-09-13"
+          }
+        ]
+      }
+    ]
+  },
+  44: {
+    "day": 44,
+    "patterns": [
+      {
+        "id": "bitwise-arithmetic",
+        "name": "Bitwise Arithmetic (Addition Without +)",
+        "recognition": [
+          "You're asked to implement addition (or another arithmetic operator) using only bitwise operations",
+          "The problem explicitly forbids +, -, or arithmetic operators"
+        ],
+        "intuition": "XOR of two bits gives the sum ignoring carry (1+0=1, 1+1=0 with a carry). AND of two bits, shifted left one place, gives exactly the carry that XOR dropped. So a+b == (a^b) + carry, and you can compute that recursively/iteratively: repeatedly set a = a^b (sum without carry), b = (a_old & b) << 1 (the carry), until the carry is 0.",
+        "template": "def get_sum(a, b):\n    mask = 0xFFFFFFFF  # keep arithmetic within 32 bits\n    while b != 0:\n        a, b = (a ^ b) & mask, ((a & b) << 1) & mask\n    # a is now the unsigned 32-bit result; convert back to signed if a's sign bit is set\n    return a if a <= 0x7FFFFFFF else ~(a ^ mask)",
+        "complexity": {
+          "time": "O(1) -- bounded by the fixed bit width (at most 32 iterations)",
+          "space": "O(1)"
+        },
+        "commonMistakes": [
+          "Forgetting the 0xFFFFFFFF mask in a language with arbitrary-precision integers (Python) -- without it, a negative b's infinite leading 1s make the loop never terminate",
+          "Forgetting to convert the final unsigned 32-bit pattern back to a signed integer when the sign bit (bit 31) is set",
+          "Confusing which operand becomes the new carry -- it's (a & b) << 1 computed from the OLD a and b, not the updated one"
+        ],
+        "walkthrough": "a=2 (0b10), b=3 (0b11): sum-without-carry = a^b = 0b01 = 1; carry = (a&b)<<1 = 0b10<<1 = 0b100 = 4. Next round: a=1, b=4: sum = 1^4 = 0b101 = 5; carry = (1&4)<<1 = 0. Carry is 0, stop -- result 5, matching 2+3=5.",
+        "resources": []
+      },
+      {
+        "id": "interval-overlap-greedy",
+        "name": "Greedy Interval Overlap (Minimum Arrows)",
+        "recognition": [
+          "You need the minimum number of 'points' (arrows, sensors, meetings) that together touch/cover every given interval",
+          "Intervals may overlap and the question is about counting groups, not merging ranges"
+        ],
+        "intuition": "Sort intervals by their END coordinate. Greedily place a point at the end of the first (soonest-ending) unhandled interval -- that point is guaranteed to be the best possible choice because it can't be beaten by placing it any later without risking missing that interval. Any interval whose start is <= that point is handled by the same point; advance to the next interval whose start is beyond it and repeat.",
+        "template": "def min_arrows(intervals):\n    intervals.sort(key=lambda iv: iv[1])\n    arrows = 0\n    arrow_pos = float('-inf')\n    for start, end in intervals:\n        if start > arrow_pos:\n            arrows += 1\n            arrow_pos = end\n    return arrows",
+        "complexity": {
+          "time": "O(n log n) -- the sort dominates",
+          "space": "O(1) extra (O(n) or O(log n) for the sort itself depending on implementation)"
+        },
+        "commonMistakes": [
+          "Sorting by START instead of END -- this breaks the greedy proof and can overcount",
+          "Getting the boundary condition backwards: an interval touching the arrow position exactly (start == arrow_pos) IS handled by that arrow, so the check must be `start > arrow_pos`, not `>=`",
+          "Re-deriving this as an interval-MERGING problem (Merge Intervals) when it's actually a counting/covering problem -- the output is a count, not a list of merged ranges"
+        ],
+        "walkthrough": "balloons = [[10,16],[2,8],[1,6],[7,12]], sorted by end: [1,6],[2,8],[7,12],[10,16].\nArrow #1 at 6 bursts [1,6] (start 1<=6) and [2,8] (start 2<=6).\nNext unhandled is [7,12]: arrow #2 at 12 bursts [7,12] (7<=12) and [10,16] (10<=12).\nTotal: 2 arrows.",
+        "resources": []
+      }
+    ]
+  },
+  45: {
+    "day": 45,
+    "patterns": [
+      {
+        "id": "data-structure-design",
+        "name": "Data-Structure Design: Combine Structures For Target Complexity",
+        "recognition": [
+          "The problem says 'design a class' with named public operations and an explicit Big-O requirement per operation",
+          "No single built-in structure gives you all the required operations at the required complexity on its own"
+        ],
+        "intuition": "These problems are solved by COMBINING two structures, each covering the other's weakness. LRU Cache: a hash map gives O(1) key lookup but no ordering; a doubly linked list gives O(1) reordering/eviction but no O(1) lookup by key -- combine them (map: key -> node, list: recency order) and both operations become O(1). Time-Based Key-Value Store: a hash map of key -> list of (timestamp, value) pairs, with timestamps inserted in increasing order (guaranteed by the problem), so binary search (bisect) finds the latest timestamp <= the query in O(log n). Hit Counter: a queue/deque of timestamps -- push new hits to the back, and lazily pop from the front anything older than the counting window (e.g. 300s ago) before reporting the count.",
+        "template": "# LRU Cache skeleton -- hashmap + doubly linked list\nclass Node:\n    def __init__(self, key, val):\n        self.key, self.val = key, val\n        self.prev = self.next = None\n\nclass LRUCache:\n    def __init__(self, capacity):\n        self.cap = capacity\n        self.map = {}                      # key -> Node\n        self.left = Node(0, 0)              # LRU sentinel\n        self.right = Node(0, 0)             # MRU sentinel\n        self.left.next, self.right.prev = self.right, self.left\n\n    def _remove(self, node):\n        node.prev.next, node.next.prev = node.next, node.prev\n\n    def _insert_at_mru(self, node):\n        prev, nxt = self.right.prev, self.right\n        prev.next = nxt.prev = node\n        node.prev, node.next = prev, nxt\n\n    def get(self, key):\n        if key not in self.map:\n            return -1\n        self._remove(self.map[key])\n        self._insert_at_mru(self.map[key])   # a successful get refreshes recency\n        return self.map[key].val\n\n    def put(self, key, val):\n        if key in self.map:\n            self._remove(self.map[key])\n        self.map[key] = Node(key, val)\n        self._insert_at_mru(self.map[key])\n        if len(self.map) > self.cap:\n            lru = self.left.next\n            self._remove(lru)\n            del self.map[lru.key]\n\n\n# Time-Based Key-Value Store skeleton -- hashmap of sorted (timestamp, value) lists + bisect\nimport bisect\nclass TimeMap:\n    def __init__(self):\n        self.store = {}   # key -> list of (timestamp, value), timestamps strictly increasing\n\n    def set(self, key, value, timestamp):\n        self.store.setdefault(key, []).append((timestamp, value))\n\n    def get(self, key, timestamp):\n        arr = self.store.get(key, [])\n        i = bisect.bisect_right(arr, (timestamp, chr(0x10FFFF))) - 1\n        return arr[i][1] if i >= 0 else \"\"\n\n\n# Hit Counter skeleton -- deque of timestamps, lazy eviction of the window\nfrom collections import deque\nclass HitCounter:\n    def __init__(self, window=300):\n        self.window = window\n        self.hits = deque()\n\n    def hit(self, timestamp):\n        self.hits.append(timestamp)\n\n    def get_hits(self, timestamp):\n        while self.hits and self.hits[0] <= timestamp - self.window:\n            self.hits.popleft()\n        return len(self.hits)",
+        "complexity": {
+          "time": "LRU get/put: O(1) each. TimeMap set: O(1) amortized, get: O(log n) via bisect. HitCounter hit: O(1) amortized, getHits: O(1) amortized (each timestamp is popped at most once across all calls, so total work across n hits is O(n))",
+          "space": "O(capacity) for LRU, O(total sets) for TimeMap, O(hits within the current window) for HitCounter"
+        },
+        "commonMistakes": [
+          "Using a plain dict for LRU with no ordering structure, then scanning for the least-recently-used entry on eviction -- that's O(n), not O(1)",
+          "Forgetting that a successful get() must ALSO refresh recency in an LRU cache, not just put()",
+          "Linear-scanning a key's timestamp list in TimeMap instead of binary searching it -- correct but O(n) per get instead of O(log n)",
+          "Evicting HitCounter timestamps eagerly on every hit() instead of lazily on getHits() -- both are valid, but eager eviction on hit() alone misses stale entries if getHits() is called without new hits arriving first"
+        ],
+        "walkthrough": "LRUCache(2): put(1,1), put(2,2) -> order [1,2] (2 is MRU). get(1) -> 1, refreshes order to [2,1] (1 is now MRU). put(3,3) -> capacity exceeded, evict LRU = 2 -> order [1,3]. get(2) -> -1 (evicted). get(3) -> 3.",
+        "resources": []
+      }
+    ]
+  },
+  46: {
+    "day": 46,
+    "patterns": [
+      {
+        "id": "hidden-mock-array-string",
+        "name": "Unseen Medium — Array/String (hidden pattern)",
+        "recognition": [],
+        "intuition": "Attempt this cold, like a live interview: read once, clarify constraints mentally, then solve within the time limit before reading anything past the REVEAL line.",
+        "resources": [
+          {
+            "title": "Mock: Longest Fair Subarray",
+            "creator": "Mirror49 internal",
+            "format": "Internal exercise",
+            "priority": "REQUIRED",
+            "instruction": "Solve within 30-35 minutes. Do not scroll to the analysis below the reveal line until you've attempted it or timed out.",
+            "duration": "35 min",
+            "verifiedAt": "2026-09-13",
+            "content": "PROBLEM\nYou are given an integer array nums and an integer x. A contiguous subarray is called \"fair\" if the difference between its maximum and its minimum element is at most x. Return the length of the longest fair subarray.\n\nCONSTRAINTS\n1 <= nums.length <= 10^5\n0 <= nums[i] <= 10^9\n0 <= x <= 10^9\n\nEXAMPLES\nnums = [8,2,4,7], x = 4  ->  2   ([2,4] or [4,7]; the full array has max-min = 6 > 4)\nnums = [10,1,2,4,7,2], x = 5  ->  4   ([2,4,7,2] has max-min = 5 <= 5)\n\nTIME LIMIT\n30-35 minutes.\n\n--- REVEAL ANALYSIS BELOW ---\n\nHIDDEN PATTERN TAG: Sliding window with two monotonic deques, tracking the window's current max and min simultaneously.\n\nWHY THIS PATTERN: \"Contiguous subarray\" is the sliding-window signal. The invalidating condition (max-min > x) is monotonic as the window grows for a fixed left edge -- once invalid it can only be repaired by shrinking from the left, which is exactly the sliding-window invariant (expand right, shrink left while invalid). A single running max/min scalar breaks the moment that value slides out of the window on the left, because you can't recover the new max/min in O(1) without more structure -- a monotonic deque of indices gives you that in amortized O(1) per element.\n\nAPPROACH: Maintain maxDeque (values strictly decreasing front-to-back) and minDeque (values strictly increasing front-to-back), both storing indices. On expanding right: pop from each deque's back while it would break monotonicity, then push the new index. While nums[maxDeque[0]] - nums[minDeque[0]] > x: advance the left pointer, popping any deque whose front index now equals the old left pointer. Track the longest window seen.\n\nCOMPLEXITY: O(n) time -- each index enters and leaves each deque at most once. O(n) space worst case.\n\nCOMMON MISTAKES: reaching for a heap without lazy deletion (gives O(n log n), and is easy to get wrong when the max/min that needs removing isn't at the top); forgetting to pop stale front indices (ones that fell outside the window) before reading a deque's front value; tracking only a running max/min scalar instead of a full deque."
+          }
+        ]
+      },
+      {
+        "id": "hidden-mock-tree-graph",
+        "name": "Unseen Medium — Tree/Graph (hidden pattern)",
+        "recognition": [],
+        "intuition": "Same rules: attempt cold within the time limit before reading past the reveal line.",
+        "resources": [
+          {
+            "title": "Mock: Component Reach Count",
+            "creator": "Mirror49 internal",
+            "format": "Internal exercise",
+            "priority": "REQUIRED",
+            "instruction": "Solve within 30-35 minutes before revealing the analysis.",
+            "duration": "35 min",
+            "verifiedAt": "2026-09-13",
+            "content": "PROBLEM\nYou are given an undirected graph with n nodes labeled 0 to n-1 and a list of edges [u, v]. For every node, compute how many OTHER nodes that are reachable from it (i.e. in the same connected component) have a strictly greater label. Return an array ans of length n where ans[i] is that count for node i.\n\nCONSTRAINTS\n1 <= n <= 2 * 10^4\n0 <= edges.length <= 4 * 10^4\nedges[i].length == 2, 0 <= edges[i][0], edges[i][1] < n\n\nEXAMPLE\nn = 5, edges = [[0,1],[1,2],[3,4]]\nComponents: {0,1,2} and {3,4}.\nFor node 0: greater labels in {0,1,2} are 1,2 -> ans[0] = 2. Node 1 -> {2} -> 1. Node 2 -> {} -> 0. Node 3 -> {4} -> 1. Node 4 -> {} -> 0.\nans = [2,1,0,1,0]\n\nTIME LIMIT\n30-35 minutes.\n\n--- REVEAL ANALYSIS BELOW ---\n\nHIDDEN PATTERN TAG: Connected components (Union-Find or BFS/DFS) + per-component sorted-order counting.\n\nWHY THIS PATTERN: \"Reachable from it\" over an undirected graph with no edge weights is a pure connectivity question -- find components first (Union-Find is a natural fit since there's no traversal order to exploit, or BFS/DFS from every unvisited node works identically). Once you have each component's member labels, the \"how many are strictly greater\" sub-question is a classic per-group counting problem: sort each component's labels once, then for each node its answer is (component size - 1 - its rank within the sorted component), which is O(1) per node after the O(k log k) sort of a component of size k.\n\nAPPROACH: Union-Find (or BFS/DFS) to group nodes into components. For each component, collect and sort its labels. For each node, binary-search (or use its stored sorted rank) to find how many labels in its own component exceed it.\n\nCOMPLEXITY: O((n + m) log n) with Union-Find + per-component sort (m = edges.length), or O(n + m) for the connectivity pass alone with sorting adding the log factor. O(n + m) space.\n\nCOMMON MISTAKES: doing an O(n^2) pairwise comparison within large components instead of sorting once; using DFS recursion without an iterative fallback on a graph with up to 2*10^4 nodes in one component (stack-depth risk); forgetting that the graph is undirected, which changes how you build the adjacency list."
+          }
+        ]
+      }
+    ]
+  },
+  47: {
+    "day": 47,
+    "patterns": [
+      {
+        "id": "hidden-mock-binary-search",
+        "name": "Unseen Medium — Binary Search (hidden pattern)",
+        "recognition": [],
+        "intuition": "Attempt cold within the time limit before reading past the reveal line.",
+        "resources": [
+          {
+            "title": "Mock: Minimum Bandwidth to Stream All Clips",
+            "creator": "Mirror49 internal",
+            "format": "Internal exercise",
+            "priority": "REQUIRED",
+            "instruction": "Solve within 30-35 minutes before revealing the analysis.",
+            "duration": "35 min",
+            "verifiedAt": "2026-09-13",
+            "content": "PROBLEM\nYou must stream a playlist of clips in the given order within T minutes total. The network's bandwidth is a constant B megabits/minute that you get to choose (by picking your plan). Clip i requires ceil(clipSize[i] / B) whole minutes to finish downloading before the next clip can start (clips cannot be split or downloaded in parallel). Return the minimum integer bandwidth B such that every clip finishes within the T-minute budget.\n\nCONSTRAINTS\n1 <= clipSize.length <= 5 * 10^4\n1 <= clipSize[i] <= 500\nclipSize.length <= T <= 5 * 10^8\n\nEXAMPLE\nclipSize = [3,6,7,8], T = 5  ->  B = 10\n(with B=10: ceil(3/10)+ceil(6/10)+ceil(7/10)+ceil(8/10) = 1+1+1+1 = 4 <= 5. With B=9: ceil(8/9)=1 still, but check smaller B values fail the 5-minute budget.)\n\nTIME LIMIT\n30-35 minutes.\n\n--- REVEAL ANALYSIS BELOW ---\n\nHIDDEN PATTERN TAG: Binary search on the answer (over feasible bandwidth values), using a monotonic feasibility predicate.\n\nWHY THIS PATTERN: The question asks for a MINIMUM value B such that a downstream feasibility check (total minutes <= T) holds. As B increases, the total download time can only decrease or stay the same -- that monotonic relationship is exactly what binary-search-on-the-answer requires. You are not searching the clipSize array itself; you are searching the space of possible bandwidth values [1, max(clipSize)] for the smallest one that passes a feasibility test.\n\nAPPROACH: Binary search B in [1, max(clipSize)]. For each candidate B, compute total = sum(ceil(clipSize[i] / B) for all i) in O(n). If total <= T, B is feasible (try smaller); otherwise B is too small (try larger). Return the smallest feasible B.\n\nCOMPLEXITY: O(n log(max(clipSize))) time, O(1) extra space.\n\nCOMMON MISTAKES: binary searching over the clipSize array indices instead of over the answer space (bandwidth values) -- the array isn't sorted and isn't what you're searching; using floor instead of ceil for the per-clip time (a clip smaller than B still needs a full minute for the last partial chunk); off-by-one in the binary search boundary (feasible search should converge to the smallest B where the predicate first becomes true, not the largest B where it's false)."
+          }
+        ]
+      },
+      {
+        "id": "hidden-mock-graph-selection",
+        "name": "Unseen Medium — Graph Algorithm Selection (hidden pattern)",
+        "recognition": [],
+        "intuition": "Attempt cold within the time limit before reading past the reveal line.",
+        "resources": [
+          {
+            "title": "Mock: Fastest Delivery With One Free Toll",
+            "creator": "Mirror49 internal",
+            "format": "Internal exercise",
+            "priority": "REQUIRED",
+            "instruction": "Solve within 30-35 minutes before revealing the analysis.",
+            "duration": "35 min",
+            "verifiedAt": "2026-09-13",
+            "content": "PROBLEM\nYou are given a weighted directed graph with n nodes (0-indexed), a list of edges [u, v, cost], a source node `src`, a destination node `dst`, and a set `tollEdges` (a subset of the given edges) that you may traverse for FREE at most ONCE during the trip (all other traversals of a toll edge, or any traversal of a non-toll edge, cost its listed weight). Return the minimum total cost from src to dst, or -1 if unreachable.\n\nCONSTRAINTS\n1 <= n <= 2 * 10^4\n0 <= edges.length <= 5 * 10^4\n0 <= cost <= 10^4\ntollEdges is a subset of edges, size up to edges.length\n\nEXAMPLE\nA direct src->dst edge with cost 20 exists, but a longer path uses two toll edges (10 each), and you may use ONE of them free: total = 0 + 10 = 10 < 20, so the answer is 10.\n\nTIME LIMIT\n30-35 minutes.\n\n--- REVEAL ANALYSIS BELOW ---\n\nHIDDEN PATTERN TAG: Dijkstra with an extra state dimension (node, freeTollUsed) instead of plain Dijkstra on (node) alone.\n\nWHY THIS PATTERN: All weights are non-negative, which rules out needing Bellman-Ford (that's for negative weights) -- so Dijkstra is the right family. But plain single-state Dijkstra assumes the cheapest way to REACH a node is always optimal regardless of how you got there; here, whether you've already spent your one free toll changes what future edges cost, so the same physical node can have two genuinely different best costs depending on that one bit of extra state. The fix is to run Dijkstra over an expanded state space: (node, hasUsedFreeToll) instead of just (node) -- exactly like 'Cheapest Flights Within K Stops' adds a stops-remaining dimension to the state.\n\nAPPROACH: Dijkstra over states (node, used) where used is 0 or 1. From (u, 0), a toll edge to v can relax to (v, 1) with cost 0 (using the free pass) OR to (v, 0) with its normal cost (saving the free pass for later); a non-toll edge only relaxes to (v, 0) at normal cost. From (u, 1), every edge (toll or not) costs its normal weight to (v, 1). Answer is min(dist[dst][0], dist[dst][1]).\n\nCOMPLEXITY: O((n + E) log n) since the state space is only 2x larger than plain Dijkstra (E = edges.length).\n\nCOMMON MISTAKES: running plain Dijkstra on (node) alone and just greedily using the free toll on the first toll edge encountered, which isn't always optimal; forgetting that BFS is insufficient here because edge weights are non-uniform (BFS only gives shortest PATH in edge count, not minimum cost); forgetting to compare BOTH final states (used=0 and used=1) at the destination, since the optimum might never use the free toll at all."
+          }
+        ]
+      }
+    ]
+  },
+  48: {
+    "day": 48,
+    "patterns": [
+      {
+        "id": "cosine-similarity-spec",
+        "name": "Vector Operations and Cosine Similarity",
+        "recognition": [
+          "You need a similarity score between two numeric vectors that's insensitive to their magnitude (length), only their direction",
+          "The task talks about 'closest' or 'most similar' embeddings/documents/vectors"
+        ],
+        "intuition": "Cosine similarity is the cosine of the angle between two vectors: dot(a,b) / (|a| * |b|). It ranges from -1 (opposite direction) to 1 (identical direction), and is 0 when orthogonal. Because it divides out each vector's magnitude, two vectors that point the same way but have very different lengths still score close to 1 -- which is exactly the property you want when comparing embeddings of different-length texts.",
+        "template": "import math\n\ndef cosine_similarity(a, b):\n    if len(a) != len(b):\n        raise ValueError(\"vectors must be the same length\")\n    dot = sum(x * y for x, y in zip(a, b))\n    norm_a = math.sqrt(sum(x * x for x in a))\n    norm_b = math.sqrt(sum(y * y for y in b))\n    if norm_a == 0 or norm_b == 0:\n        return 0.0  # define similarity as 0 against a zero vector rather than dividing by zero\n    return dot / (norm_a * norm_b)",
+        "complexity": {
+          "time": "O(d) for two vectors of dimension d",
+          "space": "O(1) beyond the input"
+        },
+        "commonMistakes": [
+          "Not handling a zero vector -- dividing by norm 0 crashes instead of returning a defined value",
+          "Confusing cosine similarity with cosine DISTANCE (distance = 1 - similarity) when a downstream sort expects one or the other",
+          "Recomputing norms from scratch for every pair in a top-k search instead of precomputing each vector's norm once"
+        ],
+        "walkthrough": "a=[1,0], b=[1,1]: dot=1, |a|=1, |b|=sqrt(2) -> similarity = 1/sqrt(2) ~= 0.707 (45-degree angle, as expected).",
+        "resources": [
+          {
+            "title": "Cosine Similarity — implementation spec",
+            "creator": "Mirror49 internal",
+            "format": "Internal exercise",
+            "priority": "REQUIRED",
+            "instruction": "Implement cosine_similarity(a, b) exactly to the contract, then write and pass the listed tests before checking the template above.",
+            "duration": "30 min",
+            "verifiedAt": "2026-09-13",
+            "content": "INPUT/OUTPUT CONTRACT\ncosine_similarity(a: list[float], b: list[float]) -> float\n- a and b are same-length numeric vectors.\n- Returns a float in [-1, 1]; returns 0.0 if either vector is all zeros.\n- Raises ValueError if len(a) != len(b).\n\nCONSTRAINTS\n1 <= len(a) == len(b) <= 10^4\nvalues can be any float, including negative\n\nEDGE CASES\n- Either vector is all zeros -> return 0.0, don't raise.\n- Identical vectors -> similarity is exactly 1.0 (watch for floating-point rounding just under 1.0).\n- Opposite vectors (b = -a) -> similarity is exactly -1.0.\n- Mismatched lengths -> ValueError.\n\nTEST CASES\n1. cosine_similarity([1,0],[0,1]) -> 0.0 (orthogonal)\n2. cosine_similarity([1,1],[1,1]) -> 1.0 (identical direction)\n3. cosine_similarity([1,0],[-1,0]) -> -1.0 (opposite)\n4. cosine_similarity([0,0],[1,1]) -> 0.0 (zero vector, no crash)\n5. cosine_similarity([1,2,3],[1,2]) -> raises ValueError\n\nDONE WHEN: all 5 tests pass and the function has no division-by-zero path."
+          }
+        ]
+      },
+      {
+        "id": "topk-heap-spec",
+        "name": "Heap-Based Top-K Selection",
+        "recognition": [
+          "You need the k largest (or smallest) items out of a much bigger stream or collection",
+          "k is small relative to n, and you don't need the rest of the items sorted"
+        ],
+        "intuition": "Sorting everything is O(n log n) when you only need k items -- wasteful once n is large. Instead, maintain a MIN-heap of size k for a top-k-LARGEST query: push each new item; if the heap exceeds size k, pop the smallest. At the end, the heap holds exactly the k largest items, and the heap's own minimum is the k-th largest -- useful as a running threshold. (Counter-intuitively you use a min-heap for top-K-largest, because the item you want to evict first is the smallest one currently kept.)",
+        "template": "import heapq\n\ndef top_k_largest(stream, k):\n    heap = []  # min-heap of the k largest items seen so far\n    for x in stream:\n        if len(heap) < k:\n            heapq.heappush(heap, x)\n        elif x > heap[0]:\n            heapq.heapreplace(heap, x)  # pop-then-push in one O(log k) step\n    return sorted(heap, reverse=True)",
+        "complexity": {
+          "time": "O(n log k) to process a stream of n items, versus O(n log n) for a full sort",
+          "space": "O(k) for the heap"
+        },
+        "commonMistakes": [
+          "Using a max-heap of the whole collection instead of a bounded min-heap of size k -- that's back to O(n log n) and O(n) space",
+          "Comparing x >= heap[0] instead of x > heap[0], which does unnecessary heap operations on ties without changing the result",
+          "Forgetting heapq.heapreplace does pop-then-push atomically -- doing heappush then heappop separately works but is two O(log k) operations instead of one"
+        ],
+        "walkthrough": "stream=[3,1,5,2,8,4], k=3: heap fills to [3,1,5]->min-heap order [1,3,5]. x=2: 2>1(heap[0]) so replace 1 with 2 -> heap holds {2,3,5}. x=8: 8>2, replace -> {3,5,8}. x=4: 4>3, replace -> {4,5,8}. Final top-3 largest = [8,5,4].",
+        "resources": [
+          {
+            "title": "Top-K Retrieval Using a Heap — implementation spec",
+            "creator": "Mirror49 internal",
+            "format": "Internal exercise",
+            "priority": "REQUIRED",
+            "instruction": "Implement top_k_largest exactly to the contract using a bounded min-heap (not a full sort), then pass the listed tests.",
+            "duration": "35 min",
+            "verifiedAt": "2026-09-13",
+            "content": "INPUT/OUTPUT CONTRACT\ntop_k_largest(stream: Iterable[float], k: int) -> list[float]\n- Returns the k largest values from stream, sorted descending.\n- If the stream has fewer than k items, returns all of them sorted descending.\n\nCONSTRAINTS\n0 <= k, stream length up to 10^6 (so an O(n log n) full sort must not be the primary solution -- it's the naive baseline to beat)\n\nEDGE CASES\n- k == 0 -> returns [].\n- Stream shorter than k -> returns every item, sorted descending.\n- Duplicate values -> duplicates are kept (not deduplicated).\n- k larger than the number of distinct values but not larger than stream length -> still returns exactly k items (duplicates included).\n\nTEST CASES\n1. top_k_largest([3,1,5,2,8,4], 3) -> [8,5,4]\n2. top_k_largest([1,2], 5) -> [2,1]\n3. top_k_largest([], 3) -> []\n4. top_k_largest([5,5,5,1], 2) -> [5,5]\n5. top_k_largest(range(100000), 3) -> [99999,99998,99997], and must run well under a second (proves it's not doing a full sort)\n\nDONE WHEN: all 5 tests pass and the implementation is O(n log k), not O(n log n)."
+          }
+        ]
+      },
+      {
+        "id": "token-bucket-spec",
+        "name": "Token Bucket Rate Limiter (Lazy Refill)",
+        "recognition": [
+          "You need to allow bursts up to a limit but cap the long-run average rate",
+          "The problem mentions 'rate limiting', 'requests per second', or 'allow bursts'"
+        ],
+        "intuition": "A token bucket holds up to `capacity` tokens; each request consumes one token if available (else it's rejected/queued), and tokens refill continuously at `rate` tokens per second. Rather than running a background timer to add tokens every tick, refill LAZILY: on every check, compute elapsed = now - last_refill_time, add elapsed * rate tokens (capped at capacity), then update last_refill_time = now. This gives exact, timer-free behavior.",
+        "template": "import time\n\nclass TokenBucket:\n    def __init__(self, capacity, refill_rate_per_sec):\n        self.capacity = capacity\n        self.rate = refill_rate_per_sec\n        self.tokens = capacity\n        self.last_refill = time.monotonic()\n\n    def _refill(self):\n        now = time.monotonic()\n        elapsed = now - self.last_refill\n        self.tokens = min(self.capacity, self.tokens + elapsed * self.rate)\n        self.last_refill = now\n\n    def allow_request(self, cost=1):\n        self._refill()\n        if self.tokens >= cost:\n            self.tokens -= cost\n            return True\n        return False",
+        "complexity": {
+          "time": "O(1) per request",
+          "space": "O(1)"
+        },
+        "commonMistakes": [
+          "Running an actual background thread/timer to add tokens every N milliseconds instead of lazy refill on demand -- unnecessary complexity and a source of race conditions",
+          "Forgetting to cap tokens at `capacity` after refilling, which lets the bucket accumulate unbounded burst allowance if idle for a long time",
+          "Using wall-clock time.time() instead of a monotonic clock -- wall-clock time can jump backwards (NTP sync, DST) and break elapsed-time math"
+        ],
+        "walkthrough": "capacity=5, rate=1 token/sec, starting tokens=5. 5 requests arrive instantly: all allowed, tokens drop to 0. A 6th request 0.5s later: refill adds 0.5*1=0.5 tokens (still < 1), request rejected. A 7th request 1s after that (1.5s total elapsed since the burst): refill adds 1.5 tokens total, capped nowhere near capacity, tokens=1.5 >= 1 -> allowed, tokens drops to 0.5.",
+        "resources": [
+          {
+            "title": "Token-Bucket Rate Limiter — implementation spec",
+            "creator": "Mirror49 internal",
+            "format": "Internal exercise",
+            "priority": "REQUIRED",
+            "instruction": "Implement TokenBucket exactly to the contract with lazy refill (no background thread/timer), then pass the listed tests using an injectable/mockable clock.",
+            "duration": "35 min",
+            "verifiedAt": "2026-09-13",
+            "content": "INPUT/OUTPUT CONTRACT\nclass TokenBucket:\n    def __init__(self, capacity: int, refill_rate_per_sec: float): ...\n    def allow_request(self, cost: int = 1) -> bool: ...\n- allow_request consumes `cost` tokens and returns True if enough were available, else returns False and consumes nothing.\n- Tokens refill continuously (lazily, on each call) at refill_rate_per_sec, capped at capacity.\n- The clock source must be injectable/mockable for deterministic tests (don't hardcode time.monotonic() with no seam).\n\nCONSTRAINTS\ncapacity >= 1, refill_rate_per_sec > 0, cost >= 1\n\nEDGE CASES\n- cost > capacity -> must always return False (can never be satisfied), never partially consume tokens.\n- Many requests submitted with zero elapsed time between them -> only `capacity` of them succeed before rejection starts.\n- A very long idle gap -> tokens must cap at `capacity`, not grow unbounded.\n\nTEST CASES\n1. bucket=TokenBucket(5,1); 5x allow_request() all True; 6th immediately -> False.\n2. Same bucket, advance mock clock by 1.0s after the burst; next allow_request() -> True (exactly 1 token refilled).\n3. TokenBucket(3,10), advance mock clock by 100s (idle), allow_request(cost=3) -> True, tokens now 0 (proves capping at capacity, not unbounded accumulation).\n4. TokenBucket(2,1), allow_request(cost=5) -> False, and tokens remain 2 (unchanged -- no partial consumption).\n5. Two allow_request(cost=1) calls with 0.5s mock-clock advance between them, rate=1: first True (tokens 1->0), second at +0.5s has only 0.5 tokens -> False.\n\nDONE WHEN: all 5 tests pass and the clock is injectable (no hardcoded time.monotonic() call inside allow_request/_refill with no seam for tests)."
+          }
+        ]
+      }
+    ]
+  },
+  49: {
+    "day": 49,
+    "patterns": [
+      {
+        "id": "hidden-mock-final-medium",
+        "name": "Unseen Medium — Final Mock (hidden pattern)",
+        "recognition": [],
+        "intuition": "Attempt cold within the time limit before reading past the reveal line. This is a different problem from Day 46/47's mocks and from the AI-fundamentals-mock's DSA item.",
+        "resources": [
+          {
+            "title": "Mock: Minimum Swaps to Group Favorites",
+            "creator": "Mirror49 internal",
+            "format": "Internal exercise",
+            "priority": "REQUIRED",
+            "instruction": "Solve within 30-35 minutes before revealing the analysis.",
+            "duration": "35 min",
+            "verifiedAt": "2026-09-13",
+            "content": "PROBLEM\nn seats are arranged in a CIRCLE, each either occupied by a VIP (1) or empty (0), given as a binary array `seats`. You may swap any two seats (not necessarily adjacent) in one move. Return the minimum number of swaps needed so that all VIPs occupy a contiguous block of seats (contiguity wraps around the circle).\n\nCONSTRAINTS\n1 <= seats.length <= 10^5\nseats[i] is 0 or 1\n\nEXAMPLE\nseats = [1,0,0,1,0,1] (circular)\nTotal VIPs = 3. Best contiguous window of length 3 (circularly) already containing the most 1s needs the fewest swaps. Answer: 1.\n\nTIME LIMIT\n30-35 minutes.\n\n--- REVEAL ANALYSIS BELOW ---\n\nHIDDEN PATTERN TAG: Fixed-size sliding window over a circular array (handled by doubling the array or using modulo indexing), tracking the maximum count of 1s in any window of size = total ones.\n\nWHY THIS PATTERN: \"Contiguous block, circularly\" with a FIXED target length (the total VIP count never changes) is the signature of a fixed-size sliding window, just wrapped around a circle. The number of swaps needed to make a given window all-1s equals (window size - number of 1s already in that window), because every 0 inside the window must be swapped with a 1 currently outside it. Minimizing swaps is therefore the same as maximizing the count of 1s already inside a window of that fixed size -- a classic fixed-window-maximum scan, just circular.\n\nAPPROACH: Let total = sum(seats), k = total. Conceptually duplicate the array (seats + seats) or use modulo indexing to slide a window of size k across all n circular starting positions. Maintain a running count of 1s in the current window; slide by adding the entering element and removing the leaving one in O(1). Track the maximum count seen; answer = k - max_count.\n\nCOMPLEXITY: O(n) time, O(1) extra space (O(n) if you materialize the doubled array instead of using modulo indexing).\n\nCOMMON MISTAKES: forgetting the circular wraparound entirely and only checking linear windows (misses the best answer when the optimal block straddles index n-1 to 0); recomputing the window's 1-count from scratch on every slide instead of incrementally updating it (correct but O(n*k) instead of O(n)); using k = n/2 or some other guess instead of k = total count of 1s, which is fixed by the problem, not a free variable."
+          }
+        ]
+      },
+      {
+        "id": "async-semaphore-reminder",
+        "name": "Async Semaphore — Bounded Concurrency Reminder",
+        "recognition": [
+          "You need to run many async tasks but cap how many run at once (protect a rate-limited API, a connection pool, a downstream service)"
+        ],
+        "intuition": "A quick refresher, not new material (this was taught on Day 3/Day 14): asyncio.Semaphore(n) lets at most n coroutines past the `async with` block at once; every other coroutine calling acquire() blocks until a slot frees up. It's the async equivalent of a bounded worker pool without manually managing threads.",
+        "template": "import asyncio\n\nasync def bounded_fan_out(items, worker, max_concurrency):\n    sem = asyncio.Semaphore(max_concurrency)\n\n    async def run_one(item):\n        async with sem:\n            return await worker(item)\n\n    return await asyncio.gather(*(run_one(x) for x in items))",
+        "complexity": {
+          "time": "O(n) coroutine launches for n items; wall-clock time bounded by ceil(n / max_concurrency) * (per-item latency)",
+          "space": "O(n) for pending task objects"
+        },
+        "commonMistakes": [
+          "Creating the Semaphore inside the per-item coroutine instead of once, shared across all of them -- that removes the bound entirely",
+          "Forgetting `async with sem` releases the slot even if the worker raises -- but only if you don't swallow the exception in a way that skips the context manager's __aexit__"
+        ],
+        "walkthrough": "10 items, max_concurrency=3: the first 3 items' semaphore acquires succeed immediately; items 4-10 block on acquire() until an earlier one finishes and releases its slot -- never more than 3 in flight at once.",
+        "resources": []
+      },
+      {
+        "id": "async-generator-reminder",
+        "name": "Async Generators / State Machines — Streaming Reminder",
+        "recognition": [
+          "You're aggregating or transforming an unbounded/long-lived stream of async events (tokens, messages, sensor readings) without loading it all into memory first"
+        ],
+        "intuition": "Quick refresher: an async generator (`async def ... yield`) lets you produce items lazily as they arrive from an async source, consumed with `async for`. For stateful aggregation across a stream (e.g. running totals, windowed stats, detecting a terminal event), model it explicitly as a small state machine: an enum/string of states plus a transition function, rather than a tangle of nested flags.",
+        "template": "async def aggregate_stream(source):\n    state = \"collecting\"\n    buffer = []\n    async for event in source:\n        if state == \"collecting\":\n            buffer.append(event)\n            if event.get(\"is_final\"):\n                state = \"flushing\"\n        if state == \"flushing\":\n            yield {\"count\": len(buffer), \"items\": buffer}\n            buffer = []\n            state = \"collecting\"",
+        "complexity": {
+          "time": "O(1) amortized per incoming event",
+          "space": "O(buffer size), bounded by the aggregation window, not the whole stream"
+        },
+        "commonMistakes": [
+          "Buffering the entire stream into a list before processing, defeating the point of streaming (unbounded memory growth)",
+          "Encoding state as multiple independent booleans instead of one explicit state variable -- invalid state combinations become reachable and hard to reason about"
+        ],
+        "walkthrough": "Events arrive one at a time; state stays \"collecting\" and buffers each one until an event has is_final=True, at which point state flips to \"flushing\", the aggregated batch is yielded downstream, and the buffer resets for the next batch.",
+        "resources": []
+      },
+      {
+        "id": "final-mock-rubric",
+        "name": "Final DSA Mock Rubric",
+        "recognition": [
+          "Use this whenever you need an honest, structured score at the end of a mock rather than a vague 'I think I did okay'"
+        ],
+        "commonMistakes": [
+          "Scoring yourself on whether the final code compiles instead of on whether you identified the right pattern within the target time",
+          "Skipping the write-up when a mock goes badly — the days you most want to skip logging are exactly the days most worth logging"
+        ],
+        "intuition": "Scoring reference for everything above.",
+        "resources": [
+          {
+            "title": "Day 49 DSA Primer Scorecard",
+            "creator": "Mirror49 internal",
+            "format": "Internal exercise",
+            "priority": "REQUIRED",
+            "instruction": "Score yourself honestly on each item after attempting it (not before).",
+            "duration": "10 min",
+            "verifiedAt": "2026-09-13",
+            "action": "Complete",
+            "content": "SCORE EACH (Strong / Partial / Weak):\n1. Minimum Swaps to Group Favorites -- did you recognize the circular fixed-window pattern before or only after the reveal?\n2. Bounded-concurrency exercise -- correct semaphore usage, no unbounded fan-out.\n3. Streaming-event aggregator exercise -- explicit state handling, no full-stream buffering.\n\nSTRONG: solved/implemented correctly within the time limit, could explain the pattern choice unprompted.\nPARTIAL: correct after seeing the reveal, or correct with a complexity/edge-case gap.\nWEAK: could not complete within double the time limit.\n\nREADINESS NOTE: this scorecard is about pattern recognition speed under time pressure -- the specific problems above are original, not memorized LeetCode answers, so a Weak score here is a signal to revisit the week's patterns, not a memorization gap."
+          }
+        ]
+      }
+    ]
+  },
+};
+
 // Attach resources onto their day (kept as a separate lookup above so the DAYS
 // array itself stays a plain transcription of the roadmap content).
 DAYS.forEach((d) => {
   if (RESOURCES_BY_DAY[d.day]) d.resources = RESOURCES_BY_DAY[d.day];
+  if (DSA_PRIMERS_BY_DAY[d.day]) d.dsaPrimer = DSA_PRIMERS_BY_DAY[d.day];
 });
 
 const DSA_OS = {
